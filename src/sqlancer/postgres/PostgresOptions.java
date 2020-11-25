@@ -33,6 +33,9 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
 
     @Parameter(names = "--connection-url", description = "Specifies the URL for connecting to the PostgreSQL server", arity = 1)
     public String connectionURL = "postgresql://localhost:5432/test";
+    
+    @Parameter(names = "--use-simple-expression-generator", description = "Specifies whether to use the lite expression generator or the full generator", arity = 1)
+    public boolean useSimpleExpressionGenerator;
 
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {
