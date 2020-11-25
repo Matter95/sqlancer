@@ -23,7 +23,7 @@ public final class PostgresRandomQueryGenerator {
     public static PostgresSelect createRandomQuery(int nrColumns, PostgresGlobalState globalState) {
         List<PostgresExpression> columns = new ArrayList<>();
         PostgresTables tables = globalState.getSchema().getRandomTableNonEmptyTables();
-        PostgresExpressionGenerator gen = new PostgresExpressionGenerator(globalState).setColumns(tables.getColumns());
+        PostgresExpressionGenerator gen = PostgresExpressionGenerator.createGenerator(globalState).setColumns(tables.getColumns());
         for (int i = 0; i < nrColumns; i++) {
             columns.add(gen.generateExpression(0));
         }

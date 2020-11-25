@@ -78,6 +78,15 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
         this.functionsAndTypes = globalState.getFunctionsAndTypes();
         this.allowedFunctionTypes = globalState.getAllowedFunctionTypes();
     }
+    
+    public static PostgresExpressionGenerator createGenerator(PostgresGlobalState globalState) {
+    	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+    		return new PostgresExpressionGeneratorLite(globalState);
+    	}
+    	else {
+    		return new PostgresExpressionGenerator(globalState);
+    	}
+    }
 
     public PostgresExpressionGenerator setColumns(List<PostgresColumn> columns) {
         this.columns = columns;
