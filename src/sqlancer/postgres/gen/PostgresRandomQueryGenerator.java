@@ -36,7 +36,7 @@ public final class PostgresRandomQueryGenerator {
                 .collect(Collectors.toList()));
         select.setFetchColumns(columns);
         if (Randomly.getBoolean()) {
-            select.setWhereClause(gen.generateExpression(0, PostgresDataType.BOOLEAN));
+            select.setWhereClause(gen.generateExpression(0, PostgresDataType.INT));
         }
         if (Randomly.getBooleanWithRatherLowProbability()) {
             select.setGroupByExpressions(gen.generateExpressions(Randomly.smallNumber() + 1));

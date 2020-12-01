@@ -91,7 +91,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     }
 
     public PostgresExpression generateExpression(int depth) {
-        return generateExpression(depth, PostgresDataType.getRandomType());
+        return generateExpression(depth, PostgresDataType.INT);
     }
 
     public List<PostgresExpression> generateOrderBy() {
