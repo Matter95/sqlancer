@@ -37,25 +37,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         this.generateOnlyKnown = generateOnlyKnown;
         this.globalState = globalState;
         table = new PostgresTable(tableName, columnsToBeAdded, null, null, null, false, false);
-        errors.add("invalid input syntax for");
-        errors.add("is not unique");
-        errors.add("integer out of range");
-        errors.add("division by zero");
-        errors.add("cannot create partitioned table as inheritance child");
-        errors.add("cannot cast");
-        errors.add("ERROR: functions in index expression must be marked IMMUTABLE");
-        errors.add("functions in partition key expression must be marked IMMUTABLE");
-        errors.add("functions in index predicate must be marked IMMUTABLE");
-        errors.add("has no default operator class for access method");
-        errors.add("does not exist for access method");
-        errors.add("does not accept data type");
-        errors.add("but default expression is of type text");
-        errors.add("has pseudo-type unknown");
-        errors.add("no collation was derived for partition key column");
-        errors.add("inherits from generated column but specifies identity");
-        errors.add("inherits from generated column but specifies default");
-        PostgresCommon.addCommonExpressionErrors(errors);
-        PostgresCommon.addCommonTableErrors(errors);
+        
     }
 
     public static Query generate(String tableName, PostgresSchema newSchema, boolean generateOnlyKnown,
@@ -82,18 +64,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
             String name = SQLite3Common.createColumnName(i);
             createColumn(name);
         }
-        if (Randomly.getBoolean()) {
-            errors.add("constraints on temporary tables may reference only temporary tables");
-            errors.add("constraints on unlogged tables may reference only permanent or unlogged tables");
-            errors.add("constraints on permanent tables may reference only permanent tables");
-            errors.add("cannot be implemented");
-            errors.add("there is no unique constraint matching given keys for referenced table");
-            errors.add("cannot reference partitioned table");
-            errors.add("unsupported ON COMMIT and foreign key combination");
-            errors.add("ERROR: invalid ON DELETE action for foreign key constraint containing generated column");
-            errors.add("exclusion constraints are not supported on partitioned tables");
-            PostgresCommon.addTableConstraints(columnHasPrimaryKey, sb, table, globalState, errors);
-        }
+
         sb.append(")");
         PostgresCommon.generateWith(sb, globalState, errors);
         if (Randomly.getBoolean() && isTemporaryTable) {
@@ -112,7 +83,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         c.setTable(table);
         columnsToBeAdded.add(c);
         sb.append(" ");
-        //TODO:: back to random
+        //TODO:: back to random, right now it guarantees a check constraint
         if (true) {
             createColumnConstraint(type, serial);
         }

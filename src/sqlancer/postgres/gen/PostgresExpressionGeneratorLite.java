@@ -67,7 +67,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     }
 
     public PostgresExpression generateExpression(int depth) {
-        return generateExpression(depth, Randomly.fromOptions(PostgresDataType.INT, PostgresDataType.BOOLEAN));
+        return generateExpression(depth, Randomly.fromOptions(PostgresDataType.INT));
     }
 
     public List<PostgresExpression> generateOrderBy() {
@@ -136,20 +136,10 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
         if (dataType == PostgresDataType.FLOAT && Randomly.getBoolean()) {
             dataType = PostgresDataType.INT;
         }
-        if (!filterColumns(dataType).isEmpty() && Randomly.getBoolean()) {
-            return potentiallyWrapInCollate(dataType, createColumnOfType(dataType));
-        }
         PostgresExpression exprInternal = generateExpressionInternal(depth, dataType);
-        return potentiallyWrapInCollate(dataType, exprInternal);
+        return exprInternal;
     }
 
-    private PostgresExpression potentiallyWrapInCollate(PostgresDataType dataType, PostgresExpression exprInternal) {
-        if (dataType == PostgresDataType.TEXT && PostgresProvider.generateOnlyKnown) {
-            return new PostgresCollate(exprInternal, "C");
-        } else {
-            return exprInternal;
-        }
-    }
 
     private PostgresExpression generateExpressionInternal(int depth, PostgresDataType dataType) throws AssertionError {
 
@@ -157,7 +147,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
             allowAggregateFunctions = false; // aggregate function calls cannot be nested
             return getAggregate(dataType);
         }
-        if (Randomly.getBooleanWithRatherLowProbability() || depth > maxDepth) {
+        if (depth > maxDepth) {
             // generic expression
         	if (filterColumns(dataType).isEmpty()) {
                 return generateConstant(r, dataType);

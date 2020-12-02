@@ -22,6 +22,7 @@ public final class PostgresRandomQueryGenerator {
 
     public static PostgresSelect createRandomQuery(int nrColumns, PostgresGlobalState globalState) {
     	
+    	//TODO: maybe make an independent class for this
     	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
     		 List<PostgresExpression> columns = new ArrayList<>();
  	        PostgresTables tables = globalState.getSchema().getRandomTableNonEmptyTables();

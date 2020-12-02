@@ -27,6 +27,7 @@ import sqlancer.postgres.gen.PostgresDiscardGenerator;
 import sqlancer.postgres.gen.PostgresDropIndexGenerator;
 import sqlancer.postgres.gen.PostgresIndexGenerator;
 import sqlancer.postgres.gen.PostgresInsertGenerator;
+import sqlancer.postgres.gen.PostgresInsertGeneratorZ3;
 import sqlancer.postgres.gen.PostgresNotifyGenerator;
 import sqlancer.postgres.gen.PostgresQueryCatalogGenerator;
 import sqlancer.postgres.gen.PostgresReindexGenerator;
@@ -88,7 +89,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         DELETE(PostgresDeleteGenerator::create), //
         DISCARD(PostgresDiscardGenerator::create), //
         DROP_INDEX(PostgresDropIndexGenerator::create), //
-        INSERT(PostgresInsertGenerator::insert), //
+        //TODO: back to normal PostgresInsertGenerator
+        INSERT(PostgresInsertGeneratorZ3::insert), //
         UPDATE(PostgresUpdateGenerator::create), //
         TRUNCATE(PostgresTruncateGenerator::create), //
         VACUUM(PostgresVacuumGenerator::create), //
