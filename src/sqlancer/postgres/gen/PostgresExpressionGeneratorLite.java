@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import sqlancer.Randomly;
+import sqlancer.mysql.ast.MySQLUnaryPostfixOperation.UnaryPostfixOperator;
 import sqlancer.postgres.PostgresCompoundDataType;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresProvider;
@@ -33,32 +34,15 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
 
     private final Randomly r;
 
-    private List<PostgresColumn> columns;
-
     private PostgresRowValue rw;
-
-    private boolean expectedResult;
-
+    
     private PostgresGlobalState globalState;
-
-    private boolean allowAggregateFunctions;
-
-    private final Map<String, Character> functionsAndTypes;
-
-    private final List<Character> allowedFunctionTypes;
 
     public PostgresExpressionGeneratorLite(PostgresGlobalState globalState) {
     	super(globalState);
         this.r = globalState.getRandomly();
         this.maxDepth = globalState.getOptions().getMaxExpressionDepth();
         this.globalState = globalState;
-        this.functionsAndTypes = globalState.getFunctionsAndTypes();
-        this.allowedFunctionTypes = globalState.getAllowedFunctionTypes();
-    }
-
-    public PostgresExpressionGeneratorLite setColumns(List<PostgresColumn> columns) {
-        this.columns = columns;
-        return this;
     }
 
     public PostgresExpressionGeneratorLite setRowValue(PostgresRowValue rw) {
@@ -110,8 +94,18 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     }
 
     private PostgresExpression generateComparison(int depth, PostgresDataType dataType) {
-        PostgresExpression leftExpr = generateExpression(depth + 1, dataType);
+        PostgresExpression leftExpr = generateConstant(new Randomly(), PostgresDataType.TEXT, true);
         PostgresExpression rightExpr = generateExpression(depth + 1, dataType);
+        
+        return getComparison(leftExpr, rightExpr);
+    }
+    
+    /*
+     * check expression
+     */
+    private PostgresExpression generateComparison(int depth, String columnName) {
+        PostgresExpression leftExpr = generateExpression(PostgresDataType.INT);
+        PostgresExpression rightExpr = generateExpression(depth + 1, PostgresDataType.INT);
         return getComparison(leftExpr, rightExpr);
     }
 
@@ -130,10 +124,10 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
 
     public PostgresExpression generateExpression(int depth, PostgresDataType originalType) {
         PostgresDataType dataType = originalType;
-        if (dataType == PostgresDataType.REAL && Randomly.getBoolean()) {
-            dataType = Randomly.fromOptions(PostgresDataType.INT, PostgresDataType.FLOAT);
+        if (dataType == PostgresDataType.REAL) {
+            dataType = PostgresDataType.INT;
         }
-        if (dataType == PostgresDataType.FLOAT && Randomly.getBoolean()) {
+        if (dataType == PostgresDataType.FLOAT) {
             dataType = PostgresDataType.INT;
         }
         PostgresExpression exprInternal = generateExpressionInternal(depth, dataType);
@@ -143,14 +137,10 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
 
     private PostgresExpression generateExpressionInternal(int depth, PostgresDataType dataType) throws AssertionError {
 
-        if (allowAggregateFunctions && Randomly.getBoolean()) {
-            allowAggregateFunctions = false; // aggregate function calls cannot be nested
-            return getAggregate(dataType);
-        }
-        if (depth > maxDepth) {
+        if (depth > maxDepth || Randomly.getBoolean()) {
             // generic expression
         	if (filterColumns(dataType).isEmpty()) {
-                return generateConstant(r, dataType);
+                return generateConstant(r, dataType, false);
             } else {
                 return createColumnOfType(dataType);
             }
@@ -164,7 +154,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
             case FLOAT:
             case MONEY:
             case INET:
-                return generateConstant(r, PostgresDataType.INT);
+                return generateConstant(r, PostgresDataType.INT, false);
             default:
                 throw new AssertionError(dataType);
             }
@@ -207,7 +197,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
 
     public PostgresExpression generateExpressionWithExpectedResult(PostgresDataType type) {
         this.expectedResult = true;
-        PostgresExpressionGeneratorLite gen = new PostgresExpressionGeneratorLite(globalState).setColumns(columns)
+        PostgresExpressionGeneratorLite gen = (PostgresExpressionGeneratorLite) new PostgresExpressionGeneratorLite(globalState).setColumns(columns)
                 .setRowValue(rw);
         PostgresExpression expr;
         do {
@@ -216,16 +206,14 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
         return expr;
     }
 
-    public static PostgresExpression generateConstant(Randomly r, PostgresDataType type) {
-        if (Randomly.getBooleanWithSmallProbability()) {
-            return PostgresConstant.createNullConstant();
-        }
+    public static PostgresExpression generateConstant(Randomly r, PostgresDataType type, boolean textVar) {
+
         // if (Randomly.getBooleanWithSmallProbability()) {
         // return PostgresConstant.createTextConstant(r.getString());
         // }
         switch (type) {
         case INT:
-            if (Randomly.getBooleanWithSmallProbability()) {
+            if (textVar) {
                 return PostgresConstant.createTextConstant(String.valueOf(r.getInteger()));
             } else {
                 return PostgresConstant.createIntConstant(r.getInteger());
@@ -249,7 +237,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
             return PostgresConstant.createRange(r.getInteger(), Randomly.getBoolean(), r.getInteger(),
                     Randomly.getBoolean());
         case MONEY:
-            return new PostgresCastOperation(generateConstant(r, PostgresDataType.FLOAT),
+            return new PostgresCastOperation(generateConstant(r, PostgresDataType.FLOAT, false),
                     getCompoundDataType(PostgresDataType.MONEY));
         case INET:
             return PostgresConstant.createInetConstant(getRandomInet(r));
@@ -274,6 +262,11 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     public static PostgresExpression generateExpression(PostgresGlobalState globalState, List<PostgresColumn> columns,
             PostgresDataType type) {
         return new PostgresExpressionGeneratorLite(globalState).setColumns(columns).generateExpression(0, type);
+    }
+    
+    public static PostgresExpression generateCheckExpression(PostgresGlobalState globalState, List<PostgresColumn> columns,
+            String columName) {
+        return ((PostgresExpressionGeneratorLite) new PostgresExpressionGeneratorLite(globalState).setColumns(columns)).generateComparison(0, columName);
     }
 
 

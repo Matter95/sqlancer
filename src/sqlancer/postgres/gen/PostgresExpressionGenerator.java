@@ -57,15 +57,15 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
 
     private final Randomly r;
 
-    private List<PostgresColumn> columns;
+    protected List<PostgresColumn> columns;
 
     private PostgresRowValue rw;
 
-    private boolean expectedResult;
+    protected boolean expectedResult;
 
     private PostgresGlobalState globalState;
 
-    private boolean allowAggregateFunctions;
+    protected boolean allowAggregateFunctions;
 
     private final Map<String, Character> functionsAndTypes;
 

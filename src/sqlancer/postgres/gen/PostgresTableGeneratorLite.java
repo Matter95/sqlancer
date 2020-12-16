@@ -13,6 +13,7 @@ import sqlancer.postgres.PostgresSchema.PostgresColumn;
 import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
 import sqlancer.postgres.PostgresVisitor;
+import sqlancer.postgres.ast.PostgresExpression;
 import sqlancer.sqlite3.gen.SQLite3Common;
 
 public class PostgresTableGeneratorLite extends PostgresTableGenerator {
@@ -61,8 +62,8 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
             if (i != 0) {
                 sb.append(", ");
             }
-            String name = SQLite3Common.createColumnName(i);
-            createColumn(name);
+            String columnName = SQLite3Common.createColumnName(i);
+            createColumn(columnName, tableName);
         }
 
         sb.append(")");
@@ -74,18 +75,18 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         }
     }
 
-    private void createColumn(String name) throws AssertionError {
-        sb.append(name);
+    private void createColumn(String columnName, String tableName) throws AssertionError {
+        sb.append(columnName);
         sb.append(" ");
         PostgresDataType type = PostgresDataType.INT;
         boolean serial = PostgresCommon.appendDataType(type, sb, true, generateOnlyKnown, globalState.getCollates());
-        PostgresColumn c = new PostgresColumn(name, type);
+        PostgresColumn c = new PostgresColumn(columnName, type);
         c.setTable(table);
         columnsToBeAdded.add(c);
         sb.append(" ");
         //TODO:: back to random, right now it guarantees a check constraint
         if (true) {
-            createColumnConstraint(type, serial);
+            createColumnConstraint(type, serial, columnName, tableName);
         }
     }
 
@@ -93,7 +94,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
        CHECK
     };
 
-    private void createColumnConstraint(PostgresDataType type, boolean serial) {
+    private void createColumnConstraint(PostgresDataType type, boolean serial, String columnName, String tableName) {
         List<ColumnConstraint> constraintSubset = new ArrayList<ColumnConstraint>();
         constraintSubset.add(ColumnConstraint.CHECK);
         
@@ -102,8 +103,13 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
             switch (c) {
             case CHECK:
                 sb.append("CHECK (");
-                sb.append(PostgresVisitor.asString(PostgresExpressionGeneratorLite.generateExpression(globalState,
-                        columnsToBeAdded, PostgresDataType.BOOLEAN)));
+                //save the check Statement in the gloablState
+                PostgresExpression check = PostgresExpressionGeneratorLite.generateCheckExpression(globalState,
+                        columnsToBeAdded, columnName);
+                //System.err.println("COLUMN NAME: " + columnName);
+                globalState.addCheckStatementsForTableN(check, getTableNumber(tableName));        
+                
+                sb.append(PostgresVisitor.asString(check));
                 sb.append(")");
                 
                 errors.add("out of range");
@@ -114,4 +120,8 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         }
     }
 
+    private static int getTableNumber(String tableName) {
+    	return Integer.parseInt(tableName.substring(1));
+    }
+    
 }

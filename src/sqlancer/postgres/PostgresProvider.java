@@ -89,8 +89,9 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         DELETE(PostgresDeleteGenerator::create), //
         DISCARD(PostgresDiscardGenerator::create), //
         DROP_INDEX(PostgresDropIndexGenerator::create), //
-        //TODO: back to normal PostgresInsertGenerator
-        INSERT(PostgresInsertGeneratorZ3::insert), //
+        //added to choose the new insert Generator
+        INSERT_LITE(PostgresInsertGeneratorZ3::insert),
+        INSERT(PostgresInsertGenerator::insert),
         UPDATE(PostgresUpdateGenerator::create), //
         TRUNCATE(PostgresTruncateGenerator::create), //
         VACUUM(PostgresVacuumGenerator::create), //
@@ -180,8 +181,21 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             nrPerformed = r.getInteger(0, 10);
             break;
         case INSERT:
-            nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        	if(!globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+        		nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        	}
+        	else {
+        		nrPerformed = 0;
+        	}
             break;
+        case INSERT_LITE:
+        	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+        		nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        	}
+        	else {
+        		nrPerformed = 0;
+        	}
+        	break;
         default:
             throw new AssertionError(a);
         }
@@ -318,5 +332,5 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     public String getDBMSName() {
         return "postgres";
     }
-
+    
 }
