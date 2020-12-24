@@ -5,8 +5,10 @@ import java.rmi.UnexpectedException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import sqlancer.GlobalState;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryNode;
@@ -17,6 +19,7 @@ import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema.PostgresColumn;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
 import sqlancer.postgres.PostgresVisitor;
+import sqlancer.postgres.PostgresGlobalState.Tuple;
 import sqlancer.postgres.ast.PostgresConstant;
 import sqlancer.postgres.ast.PostgresExpression;
 
@@ -24,10 +27,11 @@ import com.microsoft.z3.*;
 import com.mysql.cj.exceptions.WrongArgumentException;
 
 
+
 	public final class PostgresInsertGeneratorZ3 {
 		PostgresInsertGeneratorZ3() {
     }
-
+	
     public static Query insert(PostgresGlobalState globalState) {
         PostgresTable table = globalState.getSchema().getRandomTable(t -> t.isInsertable());
         ExpectedErrors errors = new ExpectedErrors();
@@ -50,18 +54,24 @@ import com.mysql.cj.exceptions.WrongArgumentException;
         sb.append(table.getName());
         List<PostgresColumn> columns = table.getRandomNonEmptyColumnSubset();
         sb.append("(");
-        sb.append(columns.stream().map(c -> c.getName()).collect(Collectors.joining(", ")));
+        sb.append(columns.stream().map(c -> c.getName()).sorted().collect(Collectors.joining(", ")));
         sb.append(")");
-        
-        
+                
         sb.append(" VALUES");
-
+        
+    	//generate a Z3 solver and initialize it accordingly
+    	Context ctxt = new Context();
+    	Solver s = ctxt.mkSolver(); 
+    	
+    	//initialize used Numbers
+    	globalState.initializeUsedNumbers(globalState.getSchema().getDatabaseTables().size());
+    	
         int n = Randomly.smallNumber() + 1;
         for (int i = 0; i < n; i++) {
             if (i != 0) {
                 sb.append(", ");
             }
-            insertRow(globalState, sb, columns, n == 1, table.getName());
+            insertRow(globalState, s, ctxt, sb, columns, n == 1, table);
         }
         
         errors.add("duplicate key value violates unique constraint");
@@ -76,33 +86,37 @@ import com.mysql.cj.exceptions.WrongArgumentException;
         return new QueryAdapter(sb.toString(), errors);
     }
 
-	private static void insertRow(PostgresGlobalState globalState, StringBuilder sb, List<PostgresColumn> columns,
-            boolean canBeDefault, String tableName) throws IgnoreMeException {
+	private static void insertRow(PostgresGlobalState globalState, Solver s, Context ctxt, StringBuilder sb, List<PostgresColumn> columns,
+            boolean canBeDefault, PostgresTable table) throws IgnoreMeException {
           	
-    	
-    	sb.append("(");
-    	
-    	//generate a Z3 solver and initialize it accordingly
-    	Context ctxt = new Context();
-    	Solver s = ctxt.mkSolver(); 
+    	sb.append("(");    	
+
     	String var = "";
-    	
-    	int tableNr = getTableNumber(tableName);
+    	int tableNr = getTableNumber(table.getName());
         //get the list of checks for the given table
     	ArrayList<PostgresExpression> checks = globalState.getCheckStatementsOfTableN(tableNr);
-
-    	
-    	    	
+    
         for (int i = 0; i < columns.size(); i++) {
-    		s.reset();
+        	s.reset();
         	if (i != 0) {
                 sb.append(", ");
             }
             
+        	//Add all used Numbers to the constraints
+        	ArrayList<Tuple> currConstraints = globalState.getUsedNumbers(tableNr);
+        	String currColumn = table.getName() + "." + table.getColumns().get(i).getName();
+        	//for each Tuple of the given table
+        	for (Tuple t : currConstraints) {
+        		if(t.varNameIsEqual(currColumn)) {
+        			//add not equal constraint with the given value
+    		     	s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(t.getVal()))));
+        		}
+			}
+
+        	
             if (!Randomly.getBooleanWithSmallProbability() || !canBeDefault) {
         	
     			PostgresExpression constant;
-            	PostgresExpression generateConstantFromZ3;
             	PostgresExpression expr = checks.get(i);
             	
     			if (expr instanceof BinaryNode) {
@@ -110,21 +124,23 @@ import com.mysql.cj.exceptions.WrongArgumentException;
     				BinaryNode<PostgresExpression> comp = (BinaryNode<PostgresExpression>) expr;
     				PostgresExpression left = comp.getLeft();
     				PostgresExpression right = comp.getRight();
+    				boolean hasVar = false;
     				
-    				if(isVar(left)) {
-    					var = PostgresVisitor.asString(left);
-    				}
-    				if(isVar(right)) {
-    					var = PostgresVisitor.asString(right);					
-    				}
     				if(isVar(left) && isVar(right)) {
     					var = "both";
+    				} else if(isVar(left)) {
+    					var = PostgresVisitor.asString(left);
+    					hasVar = true;
+    				} else if(isVar(right)) {
+    					var = PostgresVisitor.asString(right);	
+    					hasVar = true;
     				}
-    				//create arguments
-    				addConstraints(s, ctxt, left, right, getOperator(expr));
-        		}
-    			else {
-    				//Expression is not a comparison (Binary Node)
+    				
+    				//create argument when a variable is present
+    				if(hasVar)
+    					addConstraints(s, ctxt, left, right, getOperator(expr));
+        		} else {
+    				//Expression is not a comparison (!Binary Node)
     				throw new IgnoreMeException();
     			}
         			
@@ -137,28 +153,29 @@ import com.mysql.cj.exceptions.WrongArgumentException;
                 		PostgresExpression generateConstant;
                         generateConstant = PostgresExpressionGenerator.generateConstant(globalState.getRandomly(),
                                 columns.get(i).getType());
+                        
                         constant = generateConstant;
-        		}
-        		else {
-        				Model model = s.getModel();
-        				Expr e = model.eval(ctxt.mkIntConst(var), true);
+                    //evaluate variable
+        			} else {
+        				Expr e = s.getModel().eval(ctxt.mkIntConst(var), true);
         				if(e.isInt()) {
         					IntNum eint = (IntNum) e;
         					BigInteger y = eint.getBigInteger();
         					long x = y.longValue();
-	                    	generateConstantFromZ3 = PostgresConstant.createIntConstant(x);
-	                    	//add the new value as a constraint to the solver, which should prevent the same results
-	                    	s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(var), ctxt.mkInt(x))));
-        				}
-        				else {
+        					PostgresExpression generateConstantFromZ3 = PostgresConstant.createIntConstant(x);
+        					//System.err.println("var: " + var + " val: " + x);
+        				    //System.err.println(s.toString());
+        					globalState.addUsedNumber(tableNr, var, x);
+	                    	
+	        				constant = generateConstantFromZ3;
+        				} else {
         					throw new IgnoreMeException();
         				}
-        				constant = generateConstantFromZ3;
                 	}   
 		            sb.append(PostgresVisitor.asString(constant));
-	            	}
-	            	//not satisfiable
-	            	else {
+	            	
+	            //not satisfiable
+            	} else {
 	            		throw new IgnoreMeException();
 	            	}
             	     		
@@ -184,14 +201,13 @@ import com.mysql.cj.exceptions.WrongArgumentException;
     	//create named Constant or Integer Constant
     	if(isVar(left)) {
     		arg0 = ctxt.mkIntConst(PostgresVisitor.asString(left));
-    	}
-    	else {
+    	} else {
     		arg0 = ctxt.mkInt(PostgresVisitor.asExpectedValues(left));
     	}
+    	
     	if(isVar(right)) {
     		arg1 = ctxt.mkIntConst(PostgresVisitor.asString(right));
-    	}
-    	else {
+    	} else {
     		arg1 = ctxt.mkInt(PostgresVisitor.asExpectedValues(right));
     	}    
     	
@@ -217,8 +233,7 @@ import com.mysql.cj.exceptions.WrongArgumentException;
 			constraint = ctxt.mkNot(ctxt.mkEq(arg0, arg1));
 			break;
 		default:
-			constraint = ctxt.mkEq(ctxt.mkInt(0), ctxt.mkInt(0));
-			break;
+			throw new IgnoreMeException();
 		}
     	s.add(constraint);
     }

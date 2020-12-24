@@ -11,12 +11,38 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 import sqlancer.GlobalState;
 import sqlancer.Randomly;
 import sqlancer.postgres.ast.PostgresExpression;
 
 public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSchema> {
 
+	public class Tuple {
+		private String var;
+		private long val;
+		
+		public Tuple(String var, long val) {
+			this.val = val;
+			this.var = var;
+		}
+		
+		public String getVar() {
+			return var;
+		}
+		public long getVal() {
+			return val;
+		}
+		
+		public boolean varNameIsEqual(String search) {
+			if(var.equals(search)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+	
     public static final char IMMUTABLE = 'i';
     public static final char STABLE = 's';
     public static final char VOLATILE = 'v';
@@ -26,6 +52,8 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
     private List<String> opClasses = Collections.emptyList();
     // store check statements and give access to them
 	private ArrayList<ArrayList<PostgresExpression>> checkStatements = new ArrayList<ArrayList<PostgresExpression>>();
+	//store already inserted values
+	private static ArrayList<ArrayList<Tuple>> usedNumbers = new ArrayList<ArrayList<Tuple>>();
     // store and allow filtering by function volatility classifications
     private final Map<String, Character> functionsAndTypes = new HashMap<>();
     private List<Character> allowedFunctionTypes = Arrays.asList(IMMUTABLE, STABLE, VOLATILE);
@@ -132,8 +160,8 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
         return this.allowedFunctionTypes;
     }
 
-	public ArrayList<PostgresExpression> getCheckStatementsOfTableN(int n) {
-		return checkStatements.get(n);
+	public ArrayList<PostgresExpression> getCheckStatementsOfTableN(int i) {
+		return checkStatements.get(i);
 	}
 	public ArrayList<ArrayList<PostgresExpression>> getCheckStatements() {
 		return checkStatements;
@@ -145,8 +173,8 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 		}
 	}
 
-	public void addCheckStatementsForTableN(PostgresExpression item, int n) {
-		checkStatements.get(n).add(item);
+	public void addCheckStatementsForTableN(PostgresExpression item, int i) {
+		checkStatements.get(i).add(item);
 	}
 	
 	public void clearCheckStatements(int n) {
@@ -159,5 +187,27 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 		}
 	}
 	
-	
+
+	public void initializeUsedNumbers(int n) {
+		for(int i = 0; i < n; i++) {
+			usedNumbers.add(new ArrayList<Tuple>());
+		}
+	}
+
+	public void addUsedNumber(int i, String var, long val) {
+		boolean dup = false;
+		ArrayList<Tuple> workset = usedNumbers.get(i);
+		//check for duplicates
+		for(Tuple t : workset) {
+			if(t.var.equals(var) && t.val == val)
+				dup = true;
+		}
+		if(!dup)
+			workset.add(new Tuple(var, val));
+
+	}
+	//returns the used numbers of column n
+	public ArrayList<Tuple> getUsedNumbers(int i) {
+		return usedNumbers.get(i);
+	}
 }

@@ -65,7 +65,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
             String columnName = SQLite3Common.createColumnName(i);
             createColumn(columnName, tableName);
         }
-
+               
         sb.append(")");
         PostgresCommon.generateWith(sb, globalState, errors);
         if (Randomly.getBoolean() && isTemporaryTable) {
