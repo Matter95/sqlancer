@@ -57,7 +57,8 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private void createStandard() throws AssertionError {
-        sb.append("(");
+        
+    	sb.append("(");
         for (int i = 0; i < Randomly.smallNumber() + 1; i++) {
             if (i != 0) {
                 sb.append(", ");
@@ -67,12 +68,14 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         }
                
         sb.append(")");
+        /*
         PostgresCommon.generateWith(sb, globalState, errors);
         if (Randomly.getBoolean() && isTemporaryTable) {
             sb.append(" ON COMMIT ");
             sb.append(Randomly.fromOptions("PRESERVE ROWS", "DELETE ROWS", "DROP"));
             sb.append(" ");
         }
+        */
     }
 
     private void createColumn(String columnName, String tableName) throws AssertionError {

@@ -1,5 +1,6 @@
 package sqlancer.postgres;
 
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -53,7 +54,9 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
     // store check statements and give access to them
 	private ArrayList<ArrayList<PostgresExpression>> checkStatements = new ArrayList<ArrayList<PostgresExpression>>();
 	//store already inserted values
-	private static ArrayList<ArrayList<Tuple>> usedNumbers = new ArrayList<ArrayList<Tuple>>();
+	private static ArrayList<ArrayList<Tuple>> usedNumbersSat = new ArrayList<ArrayList<Tuple>>();
+	private static ArrayList<ArrayList<Tuple>> usedNumbersNsat = new ArrayList<ArrayList<Tuple>>();
+
     // store and allow filtering by function volatility classifications
     private final Map<String, Character> functionsAndTypes = new HashMap<>();
     private List<Character> allowedFunctionTypes = Arrays.asList(IMMUTABLE, STABLE, VOLATILE);
@@ -187,16 +190,15 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 		}
 	}
 	
-
-	public void initializeUsedNumbers(int n) {
+	public void initializeUsedNumbersSat(int n) {
 		for(int i = 0; i < n; i++) {
-			usedNumbers.add(new ArrayList<Tuple>());
+			usedNumbersSat.add(new ArrayList<Tuple>());
 		}
 	}
 
-	public void addUsedNumber(int i, String var, long val) {
+	public void addUsedNumberSat(int i, String var, long val) {
 		boolean dup = false;
-		ArrayList<Tuple> workset = usedNumbers.get(i);
+		ArrayList<Tuple> workset = usedNumbersSat.get(i);
 		//check for duplicates
 		for(Tuple t : workset) {
 			if(t.var.equals(var) && t.val == val)
@@ -207,7 +209,30 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 
 	}
 	//returns the used numbers of column n
-	public ArrayList<Tuple> getUsedNumbers(int i) {
-		return usedNumbers.get(i);
+	public ArrayList<Tuple> getUsedNumbersSat(int i) {
+		return usedNumbersSat.get(i);
+	}
+	
+	public void initializeUsedNumbersNsat(int n) {
+		for(int i = 0; i < n; i++) {
+			usedNumbersNsat.add(new ArrayList<Tuple>());
+		}
+	}
+	
+	public void addUsedNumberNsat(int i, String var, long val) {
+		boolean dup = false;
+		ArrayList<Tuple> workset = usedNumbersNsat.get(i);
+		//check for duplicates
+		for(Tuple t : workset) {
+			if(t.var.equals(var) && t.val == val)
+				dup = true;
+		}
+		if(!dup)
+			workset.add(new Tuple(var, val));
+
+	}
+	//returns the used numbers of column n
+	public ArrayList<Tuple> getUsedNumbersNsat(int i) {
+		return usedNumbersNsat.get(i);
 	}
 }
