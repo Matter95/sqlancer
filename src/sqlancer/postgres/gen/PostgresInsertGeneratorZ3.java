@@ -79,6 +79,7 @@ import com.mysql.cj.exceptions.WrongArgumentException;
                     sb.append(", ");
                 }
                 s.reset();
+                //TODO: make j == 0 random
                 insertRow(s, ctxt, globalState,sb, columns, n == 1, table, j == 0);
             }
             if(j == 0) {
@@ -173,8 +174,11 @@ import com.mysql.cj.exceptions.WrongArgumentException;
 						
 						BoolExpr e = makeBoolExpr(ctxt, arg0, arg1, getOperator(expr));
 						
-						if(!sat)							
-							ctxt.mkNot(e);
+						if(!sat) {				
+							System.err.println(e);
+							e = ctxt.mkNot(e);
+							System.err.println(e);
+						}
 						s.add(e);
 					}					  				
         		} else {
@@ -227,8 +231,7 @@ import com.mysql.cj.exceptions.WrongArgumentException;
 	    					Model model = s.getModel();
 	        				Expr e = model.eval(ctxt.mkIntConst(var), true);
 	        				long x = modelToLong(e);
-	        				Expr name = ctxt.mkIntConst(currColumn);
-	        				s.add(ctxt.mkNot(ctxt.mkEq(name, ctxt.mkInt(x))));
+	        				s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(x))));
 	        				//System.err.println("name | value: " + name + " | " + ctxt.mkInt(x));
 	        				PostgresExpression generateConstantFromZ3 = PostgresConstant.createIntConstant(x);
 	        				if(sat)
