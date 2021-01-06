@@ -21,9 +21,9 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 
 	public class Tuple {
 		private String var;
-		private long val;
+		private int val;
 		
-		public Tuple(String var, long val) {
+		public Tuple(String var, int val) {
 			this.val = val;
 			this.var = var;
 		}
@@ -31,7 +31,7 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 		public String getVar() {
 			return var;
 		}
-		public long getVal() {
+		public int getVal() {
 			return val;
 		}
 		
@@ -196,7 +196,7 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 		}
 	}
 
-	public void addUsedNumberSat(int i, String var, long val) {
+	public void addUsedNumberSat(int i, String var, int val) {
 		boolean dup = false;
 		ArrayList<Tuple> workset = usedNumbersSat.get(i);
 		//check for duplicates
@@ -219,7 +219,7 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
 		}
 	}
 	
-	public void addUsedNumberNsat(int i, String var, long val) {
+	public void addUsedNumberNsat(int i, String var, int val) {
 		boolean dup = false;
 		ArrayList<Tuple> workset = usedNumbersNsat.get(i);
 		//check for duplicates

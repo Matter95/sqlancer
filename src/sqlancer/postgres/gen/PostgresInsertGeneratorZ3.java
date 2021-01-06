@@ -1,14 +1,9 @@
 package sqlancer.postgres.gen;
 
-import java.math.BigInteger;
-import java.rmi.UnexpectedException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import sqlancer.GlobalState;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryNode;
@@ -24,7 +19,6 @@ import sqlancer.postgres.ast.PostgresConstant;
 import sqlancer.postgres.ast.PostgresExpression;
 
 import com.microsoft.z3.*;
-import com.mysql.cj.exceptions.WrongArgumentException;
 
 
 
@@ -110,10 +104,10 @@ import com.mysql.cj.exceptions.WrongArgumentException;
     	ArrayList<Tuple> currConstraints;
     	//Add all used Numbers to the constraints
     	if(sat) {
-    	currConstraints = globalState.getUsedNumbersSat(tableNr);
+    		currConstraints = globalState.getUsedNumbersSat(tableNr);
     	}
     	else {
-    	currConstraints = globalState.getUsedNumbersNsat(tableNr);	
+    		currConstraints = globalState.getUsedNumbersNsat(tableNr);	
     	}
     	
     	
@@ -175,9 +169,7 @@ import com.mysql.cj.exceptions.WrongArgumentException;
 						BoolExpr e = makeBoolExpr(ctxt, arg0, arg1, getOperator(expr));
 						
 						if(!sat) {				
-							System.err.println(e);
 							e = ctxt.mkNot(e);
-							System.err.println(e);
 						}
 						s.add(e);
 					}					  				
@@ -230,7 +222,7 @@ import com.mysql.cj.exceptions.WrongArgumentException;
 	    				} else {
 	    					Model model = s.getModel();
 	        				Expr e = model.eval(ctxt.mkIntConst(var), true);
-	        				long x = modelToLong(e);
+	        				int x = modelToInt(e);
 	        				s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(x))));
 	        				//System.err.println("name | value: " + name + " | " + ctxt.mkInt(x));
 	        				PostgresExpression generateConstantFromZ3 = PostgresConstant.createIntConstant(x);
@@ -324,11 +316,10 @@ import com.mysql.cj.exceptions.WrongArgumentException;
     	return Integer.parseInt(tableName.substring(1));
     }
 	
-    private static long modelToLong(Expr e) throws IgnoreMeException{
+    private static int modelToInt(Expr e) throws IgnoreMeException{
     	if(e.isInt()) {
 			IntNum eIntSat = (IntNum) e;
-			BigInteger y = eIntSat.getBigInteger();
-			return y.longValue();
+			return eIntSat.getInt();
 		} else {
 			throw new IgnoreMeException();
 		}
@@ -337,8 +328,8 @@ import com.mysql.cj.exceptions.WrongArgumentException;
 		//add the constraints value
 			sb.append(PostgresVisitor.asString(e));
 			if(sat) 
-				globalState.addUsedNumberSat(tableNr, var, Long.parseLong(PostgresVisitor.asString(e)));				
+				globalState.addUsedNumberSat(tableNr, var, Integer.parseInt(PostgresVisitor.asString(e)));				
 			else
-				globalState.addUsedNumberNsat(tableNr, var, Long.parseLong(PostgresVisitor.asString(e)));
+				globalState.addUsedNumberNsat(tableNr, var, Integer.parseInt(PostgresVisitor.asString(e)));
     }
 }
