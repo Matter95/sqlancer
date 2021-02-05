@@ -52,7 +52,7 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
     private List<String> collates = Collections.emptyList();
     private List<String> opClasses = Collections.emptyList();
     // store check statements and give access to them
-	private ArrayList<ArrayList<PostgresExpression>> checkStatements = new ArrayList<ArrayList<PostgresExpression>>();
+	private ArrayList<ArrayList<ArrayList<PostgresExpression>>> checkStatements = new ArrayList<ArrayList<ArrayList<PostgresExpression>>>();
 	//store already inserted values
 	private static ArrayList<ArrayList<Tuple>> usedNumbersSat = new ArrayList<ArrayList<Tuple>>();
 	private static ArrayList<ArrayList<Tuple>> usedNumbersNsat = new ArrayList<ArrayList<Tuple>>();
@@ -62,7 +62,8 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
     private List<Character> allowedFunctionTypes = Arrays.asList(IMMUTABLE, STABLE, VOLATILE);
 
     public PostgresGlobalState() {
-    	initializeCheckStatements();
+    	//TODO: maybe make these values options?
+    	initializeCheckStatements(8,10);
     }
     
     @Override
@@ -162,22 +163,29 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
     public List<Character> getAllowedFunctionTypes() {
         return this.allowedFunctionTypes;
     }
-
-	public ArrayList<PostgresExpression> getCheckStatementsOfTableN(int i) {
+	public ArrayList<PostgresExpression> getCheckStatementsOfTableNColumnM(int i, int j) {
+		return checkStatements.get(i).get(j);
+	}
+	public ArrayList<ArrayList<PostgresExpression>> getCheckStatementsOfTableN(int i) {
 		return checkStatements.get(i);
 	}
-	public ArrayList<ArrayList<PostgresExpression>> getCheckStatements() {
+	public ArrayList<ArrayList<ArrayList<PostgresExpression>>> getCheckStatements() {
 		return checkStatements;
 	}
-	public void initializeCheckStatements() {
-		//TODO: maybe make the variable an option?
-		for(int i = 0; i < 10; i++) {
-			this.checkStatements.add(new ArrayList<PostgresExpression>());
+	public void initializeCheckStatements(int tables, int columns) {
+		//initialize every table
+		for(int i = 0; i < tables; i++) {
+			checkStatements.add(new ArrayList<ArrayList<PostgresExpression>>());
+			//initialize every column for each table
+			for(int j = 0; j < columns; j++) {
+				checkStatements.get(i).add(new ArrayList<PostgresExpression>());
+			}
+
 		}
 	}
 
-	public void addCheckStatementsForTableN(PostgresExpression item, int i) {
-		checkStatements.get(i).add(item);
+	public void addCheckStatementsForTableNColumnM(PostgresExpression item, int i, int j) {
+		checkStatements.get(i).get(j).add(item);
 	}
 	
 	public void clearCheckStatements(int n) {

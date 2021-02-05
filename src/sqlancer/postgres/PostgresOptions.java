@@ -14,6 +14,7 @@ import sqlancer.common.oracle.CompositeTestOracle;
 import sqlancer.common.oracle.TestOracle;
 import sqlancer.postgres.PostgresOptions.PostgresOracleFactory;
 import sqlancer.postgres.oracle.PostgresNoRECOracle;
+import sqlancer.postgres.oracle.PostgresNoRECOracleLite;
 import sqlancer.postgres.oracle.PostgresPivotedQuerySynthesisOracle;
 import sqlancer.postgres.oracle.tlp.PostgresTLPAggregateOracle;
 import sqlancer.postgres.oracle.tlp.PostgresTLPHavingOracle;
@@ -41,7 +42,10 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
         NOREC {
             @Override
             public TestOracle create(PostgresGlobalState globalState) throws SQLException {
-                return new PostgresNoRECOracle(globalState);
+                if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator)
+                	return new PostgresNoRECOracleLite(globalState);
+                else
+                	return new PostgresNoRECOracle(globalState);
             }
         },
         PQS {

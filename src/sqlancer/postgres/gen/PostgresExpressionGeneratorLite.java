@@ -278,10 +278,16 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
         return expressions;
     }
 
+    
+    
     public PostgresExpression generateExpression(PostgresDataType dataType) {
         return generateExpression(0, dataType);
     }
 
+    public PostgresExpression generateCheckExpression(PostgresDataType dataType) {
+        return generateExpression(0, dataType);
+    }
+    
     public PostgresExpressionGeneratorLite setGlobalState(PostgresGlobalState globalState) {
         this.globalState = globalState;
         return this;

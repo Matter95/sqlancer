@@ -27,7 +27,7 @@ import sqlancer.postgres.gen.PostgresDiscardGenerator;
 import sqlancer.postgres.gen.PostgresDropIndexGenerator;
 import sqlancer.postgres.gen.PostgresIndexGenerator;
 import sqlancer.postgres.gen.PostgresInsertGenerator;
-import sqlancer.postgres.gen.PostgresInsertGeneratorZ3;
+import sqlancer.postgres.gen.PostgresInsertGeneratorLite;
 import sqlancer.postgres.gen.PostgresNotifyGenerator;
 import sqlancer.postgres.gen.PostgresQueryCatalogGenerator;
 import sqlancer.postgres.gen.PostgresReindexGenerator;
@@ -90,7 +90,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         DISCARD(PostgresDiscardGenerator::create), //
         DROP_INDEX(PostgresDropIndexGenerator::create), //
         //added to choose the new insert Generator
-        INSERT_LITE(PostgresInsertGeneratorZ3::insert),
+        INSERT_LITE(PostgresInsertGeneratorLite::insert),
         INSERT(PostgresInsertGenerator::insert),
         UPDATE(PostgresUpdateGenerator::create), //
         TRUNCATE(PostgresTruncateGenerator::create), //
@@ -207,7 +207,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     public void generateDatabase(PostgresGlobalState globalState) throws Exception {
         readFunctions(globalState);
         createTables(globalState, Randomly.fromOptions(4, 5, 6));
-        prepareTables(globalState);
+        //if(!globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator)
+        	prepareTables(globalState);
     }
 
     @Override
@@ -304,7 +305,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
                         throw new IgnoreMeException();
                     }
                 });
-        se.executeStatements();
+        se.executeStatements();        
         globalState.executeStatement(new QueryAdapter("COMMIT", true));
         globalState.executeStatement(new QueryAdapter("SET SESSION statement_timeout = 5000;\n"));
     }

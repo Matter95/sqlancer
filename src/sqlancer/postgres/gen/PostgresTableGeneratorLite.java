@@ -79,18 +79,29 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private void createColumn(String columnName, String tableName) throws AssertionError {
-        sb.append(columnName);
-        sb.append(" ");
+        //
+    	Randomly rand = new Randomly();
+    	//between 1 and 3 checks
+    	int n = rand.getInteger(1, 3);   	
+    	sb.append(columnName);
+        sb.append(" ");    		
         PostgresDataType type = PostgresDataType.INT;
         boolean serial = PostgresCommon.appendDataType(type, sb, true, generateOnlyKnown, globalState.getCollates());
         PostgresColumn c = new PostgresColumn(columnName, type);
         c.setTable(table);
         columnsToBeAdded.add(c);
         sb.append(" ");
-        //TODO:: back to random, right now it guarantees a check constraint
-        if (true) {
-            createColumnConstraint(type, serial, columnName, tableName);
-        }
+
+        for(int i = 0; i < n; i++) {
+    		if(i != 0) {
+    			sb.append(", ");
+    		}    
+          //TODO:: back to random, right now it guarantees a check constraint
+            if (true) {
+                createColumnConstraint(type, serial, columnName, tableName);
+            }
+    	}
+        
     }
 
     private enum ColumnConstraint {
@@ -109,8 +120,8 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
                 //save the check Statement in the gloablState
                 PostgresExpression check = PostgresExpressionGeneratorLite.generateCheckExpression(globalState,
                         columnsToBeAdded, columnName);
-                //System.err.println("COLUMN NAME: " + columnName);
-                globalState.addCheckStatementsForTableN(check, getTableNumber(tableName));        
+                //System.err.println("TABLE NAME: " + tableName + " | " + "COLUMN NAME: " + columnName + getTableNumber(columnName));
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),getTableNumber(columnName));        
                 
                 sb.append(PostgresVisitor.asString(check));
                 sb.append(")");
