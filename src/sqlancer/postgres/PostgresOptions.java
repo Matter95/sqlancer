@@ -37,7 +37,19 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
     
     @Parameter(names = "--use-simple-expression-generator", description = "Specifies whether to use the lite expression generator or the full generator", arity = 1)
     public boolean useSimpleExpressionGenerator;
-
+    
+    @Parameter(names = "--activate-db-checks", description = "Specifies whether to use database check statements additionally to the where clause", arity = 1)
+    public boolean activateDbChecks;
+    
+    @Parameter(names = "--number-of-checks", description = "Specifies how many check statements per column are maximally generated")
+    public int nrChecks = 3;
+    
+    @Parameter(names = "--number-of-values-to-insert", description = "Specifies how many check statements per column are maximally generated")
+    public int nrInsertValues = 8;
+    
+    @Parameter(names = "--insert-check-table-values", description = "Specifies whether to insert values into the database before reaching the oracle", arity = 1)
+    public boolean insertCheckTableValues;
+    
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {
             @Override

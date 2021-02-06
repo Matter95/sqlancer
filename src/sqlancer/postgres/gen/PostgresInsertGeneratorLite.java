@@ -25,7 +25,7 @@ import com.microsoft.z3.*;
 
 
 	public final class PostgresInsertGeneratorLite {
-		PostgresInsertGeneratorLite() {
+		public PostgresInsertGeneratorLite() {
     }
 	
     public static Query insert(PostgresGlobalState globalState) {
@@ -47,7 +47,7 @@ import com.microsoft.z3.*;
         errors.add("but expression is of type");
         StringBuilder sb = new StringBuilder();
         
-        List<PostgresColumn> columns = table.getRandomNonEmptyColumnSubset(1);
+        List<PostgresColumn> columns = table.getRandomNonEmptyColumnSubset();
 
         //initialize used Numbers
     	globalState.initializeUsedNumbersSat(globalState.getSchema().getDatabaseTables().size());
@@ -55,20 +55,21 @@ import com.microsoft.z3.*;
     	//generate a Z3 solver for satisfying the constraint and one that does not and initialize it accordingly
     	Context ctxt = new Context();
     	Solver s = ctxt.mkSolver(); 
-    	
-        String cols = columns.stream().map(c -> c.getName()).sorted().collect(Collectors.joining(", "));
-        for(int j = 0; j < 1; j++) {
-        	sb.append("INSERT INTO ");
-            sb.append(table.getName());
-        	sb.append("(");
-            sb.append(cols);
-            sb.append(")");
-                    
-            sb.append(" VALUES");
-            
-            insertRow(s, ctxt, globalState,sb, columns, table, j == 0);
-        }
-
+    	int size = columns.size();
+    	for(PostgresColumn column : columns) {
+	    	sb.append("INSERT INTO ");
+	        sb.append(table.getName());
+	    	sb.append("(");
+	        sb.append(column.getName());
+	        sb.append(")");
+	                
+	        sb.append(" VALUES");
+	        
+	        insertRow(s, ctxt, globalState,sb, column, table, false);
+	        if(size > 1)
+	        	sb.append("\n");
+	        size--;
+    	}
         errors.add("duplicate key value violates unique constraint");
         errors.add("identity column defined as GENERATED ALWAYS");
         errors.add("out of range");
@@ -81,12 +82,71 @@ import com.microsoft.z3.*;
         return new QueryAdapter(sb.toString(), errors);
     }
 
-	private static void insertRow(Solver s, Context ctxt, PostgresGlobalState globalState, StringBuilder sb, List<PostgresColumn> columns,
+    public static Query insert(PostgresGlobalState globalState, Solver s, Context ctxt) {
+        List<PostgresTable> tables = globalState.getSchema().getTables(t -> t.isInsertable());
+        ExpectedErrors errors = new ExpectedErrors();
+        errors.add("cannot insert into column");
+        PostgresCommon.addCommonExpressionErrors(errors);
+        PostgresCommon.addCommonInsertUpdateErrors(errors);
+        PostgresCommon.addCommonExpressionErrors(errors);
+        errors.add("multiple assignments to same column");
+        errors.add("violates foreign key constraint");
+        errors.add("value too long for type character varying");
+        errors.add("conflicting key value violates exclusion constraint");
+        errors.add("violates not-null constraint");
+        errors.add("current transaction is aborted");
+        errors.add("bit string too long");
+        errors.add("new row violates check option for view");
+        errors.add("reached maximum value of sequence");
+        errors.add("but expression is of type");
+        StringBuilder sb = new StringBuilder();
+        //initialize used Numbers
+    	globalState.initializeUsedNumbersSat(globalState.getSchema().getDatabaseTables().size());
+    	globalState.initializeUsedNumbersNsat(globalState.getSchema().getDatabaseTables().size());
+    	int tSize = tables.size();
+        for(PostgresTable table : tables) {
+	        List<PostgresColumn> columns = table.getColumns();
+
+	    	//generate a Z3 solver for satisfying the constraint and one that does not and initialize it accordingly
+	    	int size = columns.size();
+	    	for(PostgresColumn column : columns) {
+		    	sb.append("INSERT INTO ");
+		        sb.append(table.getName());
+		    	sb.append("(");
+		        sb.append(column.getName());
+		        sb.append(")");
+		                
+		        sb.append(" VALUES");
+		        
+		        insertRow(s, ctxt, globalState,sb, column, table, false);
+		        if(size > 1)
+		        	sb.append("\n");
+		        size--;
+	    	}
+	        if(tSize > 1)
+	        	sb.append("\n");
+	        tSize--;
+        }
+        errors.add("duplicate key value violates unique constraint");
+        errors.add("identity column defined as GENERATED ALWAYS");
+        errors.add("out of range");
+        errors.add("violates check constraint");
+        errors.add("no partition of relation");
+        errors.add("invalid input syntax");
+        errors.add("division by zero");
+        errors.add("violates foreign key constraint");
+        errors.add("data type unknown");
+        
+        return new QueryAdapter(sb.toString(), errors);
+    }
+    
+    
+	private static void insertRow(Solver s, Context ctxt, PostgresGlobalState globalState, StringBuilder sb, PostgresColumn column,
             PostgresTable table, boolean sat) throws IgnoreMeException {
         s.reset();
 
     	int tableNr = getTableNumber(table.getName());
-
+    	int columnNr = getTableNumber(column.getName());
 
         //get the list of checks for the given table
     	ArrayList<Tuple> currConstraints;
@@ -98,160 +158,158 @@ import com.microsoft.z3.*;
     		currConstraints = globalState.getUsedNumbersNsat(tableNr);	
     	}
     	
-    	//go through each column of the table and insert values
-        for (int i = 0; i < columns.size(); i++) {
-        	String currColumn = table.getName() + "." + table.getColumns().get(i).getName();
-        	//System.err.println("Loop iteration: " + i + " | currCol: " + currColumn);
-        	ArrayList<PostgresExpression> checks = globalState.getCheckStatementsOfTableNColumnM(tableNr, i);
-        	
-        	if (i != 0) {
-                sb.append(", ");
-            }
-        	//for each Tuple of the given table
-        	for (Tuple t : currConstraints) {
-        		if(t.varNameIsEqual(currColumn)) {
-        			//add not equal constraint for the already used value
-    		     	s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(t.getVal()))));
-        		}
+    	String currColumn = table.getName() + "." + column.getName();
+    	//System.err.println("Loop iteration: " + i + " | currCol: " + currColumn);
+    	ArrayList<PostgresExpression> checks = globalState.getCheckStatementsOfTableNColumnM(tableNr, columnNr);
+    	
+    	
+    	//for each Tuple of the given table
+    	for (Tuple t : currConstraints) {
+    		if(t.varNameIsEqual(currColumn)) {
+    			//add not equal constraint for the already used value
+		     	s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(t.getVal()))));
     		}
-        	String var = "";
-        	
-        	boolean varToEvaluate = false;
-        	boolean eqNeq = false;
-			for(PostgresExpression expr : checks) {
-    			boolean rightIsVar = false;
-				boolean leftIsVar = false;
-				PostgresExpression left;
-				PostgresExpression right;
-				
-				//System.err.println(PostgresVisitor.asString(expr));
-				
-    			if (expr instanceof BinaryNode) {
-    				@SuppressWarnings("unchecked")
-    				BinaryNode<PostgresExpression> comp = (BinaryNode<PostgresExpression>) expr;
-    				left = comp.getLeft();	
-    				right = comp.getRight();
-    			} else {
-    				//Expression is not a comparison (!Binary Node)
-    				throw new IgnoreMeException();
-    			}
-    			String l = varToString(left);
-    			String r = varToString(right);
-
-				//variable we will evaluate on
-				if(!l.equals("noVar")) {
-					var = l;
-					leftIsVar = true;
-				}
-				if(!r.equals("noVar")) {
-					var = r;
-					rightIsVar = true;
-				}	
-				//create argument when a variable is present
-				if((leftIsVar || rightIsVar) && (!leftIsVar || !rightIsVar)) {
-					ArithExpr arg0; 
-					ArithExpr arg1; 
-
-					if(rightIsVar) 
-						arg1 = ctxt.mkIntConst(PostgresVisitor.asString(right));
-					else
-						arg1 = ctxt.mkInt(Integer.parseInt(right.toString()));
-					if(leftIsVar)
-						arg0 = ctxt.mkIntConst(PostgresVisitor.asString(left));
-					else
-						arg0 = ctxt.mkInt(Integer.parseInt(left.toString()));
-					//System.err.println("Argument 0: " + arg0 + " | Argument 1: " + arg1);
-					BoolExpr e = makeBoolExpr(ctxt, arg0, arg1, getOperator(expr));
-					
-					if(!sat) {				
-						e = ctxt.mkNot(e);
-					}
-					s.add(e);
-            		varToEvaluate = true;
-				}
-				//single constraint edge case
-				if(checks.size() == 1 && varToEvaluate) {
-        			//Special Case EQ/NEQ
-    				boolean isEqSat = getOperator(expr) == Ops.EQUAL && sat;
-    				boolean isNeqNsat = getOperator(expr) == Ops.NOT_EQUAL && !sat;
-    				boolean isSC = isEqSat || isNeqNsat;
-    				if(isSC) {
-    	            	sb.append("(");    	
-						if(isEqSat) {
-							if(rightIsVar) {
-	    						sb.append(PostgresVisitor.asString(left));
-							} else if(leftIsVar) {
-	    						sb.append(PostgresVisitor.asString(right));
-							}
-							eqNeq = true;
-	    				} else if(isNeqNsat) {
-	    					if(rightIsVar) {
-	    						sb.append(PostgresVisitor.asString(left));
-							} else if(leftIsVar) {
-	    						sb.append(PostgresVisitor.asString(right));
-							}
-							eqNeq = true;		    					
-    					}
-		            	sb.append(")");    	
-    				}
-				}
-			}
+		}
+    	String var = "";
+    	
+    	boolean varToEvaluate = false;
+    	boolean eqNeq = false;
+		for(PostgresExpression expr : checks) {
+			boolean rightIsVar = false;
+			boolean leftIsVar = false;
+			PostgresExpression left;
+			PostgresExpression right;
 			
-			int n = Randomly.smallNumber() + 1;
-			if(!varToEvaluate) {
-	            for (int j = 0; j < n; j++) {
-	            	sb.append("(");    	
-					//just use random numbers
-	        		PostgresExpression generateConstant;
-	                generateConstant = PostgresExpressionGenerator.generateConstant(globalState.getRandomly(),
-	                        columns.get(i).getType());
-		            sb.append(PostgresVisitor.asString(generateConstant));
-	            	sb.append(")");
-	            	if(j < n-1)
-		            	sb.append(",");    	
-
-	            }
-			} else if(eqNeq) {
-				//if special case equal or not(not equal) [Not Satisfying] occured skip model evaluation
+			//System.err.println(PostgresVisitor.asString(expr));
+			
+			if (expr instanceof BinaryNode) {
+				@SuppressWarnings("unchecked")
+				BinaryNode<PostgresExpression> comp = (BinaryNode<PostgresExpression>) expr;
+				left = comp.getLeft();	
+				right = comp.getRight();
 			} else {
-	            for (int j = 0; j < n; j++) {
-					Status state = s.check();
-					//check if statement is satisfiable
-		        	if(state.toInt() > 0) {
-		            	sb.append("(");    	
-
-		                //evaluate current column
-	    				Expr e = s.getModel().eval(ctxt.mkIntConst(currColumn), true);
-	    				int x = modelToInt(e);
-	    				s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(x))));
-	    				
-	    				//System.err.println("name | value: " + name + " | " + ctxt.mkInt(x));
-	    				PostgresExpression generateConstantFromZ3 = PostgresConstant.createIntConstant(x);
-	    				if(sat)
-	    					globalState.addUsedNumberSat(tableNr, var, x);
-	    				else
-	    					globalState.addUsedNumberNsat(tableNr, var, x);
-
-	    				sb.append(PostgresVisitor.asString(generateConstantFromZ3));
-		            	sb.append(")");    	
-		            	if(j < n-1)
-			            	sb.append(",");  
-    				//not satisfiable
-		        	} else 
-		        		throw new IgnoreMeException();
-	            } 
+				//Expression is not a comparison (!Binary Node)
+				throw new IgnoreMeException();
 			}
-        }
+			String l = varToString(left);
+			String r = varToString(right);
+
+			//variable we will evaluate on
+			if(!l.equals("noVar")) {
+				var = l;
+				leftIsVar = true;
+			}
+			if(!r.equals("noVar")) {
+				var = r;
+				rightIsVar = true;
+			}	
+			//create argument when a variable is present
+			if((leftIsVar || rightIsVar) && (!leftIsVar || !rightIsVar)) {
+				ArithExpr arg0; 
+				ArithExpr arg1; 
+
+				if(rightIsVar) 
+					arg1 = ctxt.mkIntConst(PostgresVisitor.asString(right));
+				else
+					arg1 = ctxt.mkInt(Integer.parseInt(right.toString()));
+				if(leftIsVar)
+					arg0 = ctxt.mkIntConst(PostgresVisitor.asString(left));
+				else
+					arg0 = ctxt.mkInt(Integer.parseInt(left.toString()));
+				//System.err.println("Argument 0: " + arg0 + " | Argument 1: " + arg1);
+				BoolExpr e = makeBoolExpr(ctxt, arg0, arg1, getOperator(expr));
+				
+				if(!sat) {				
+					e = ctxt.mkNot(e);
+				}
+				s.add(e);
+        		varToEvaluate = true;
+			}
+			//single constraint edge case
+			if(checks.size() == 1 && varToEvaluate) {
+    			//Special Case EQ/NEQ
+				boolean isEqSat = getOperator(expr) == Ops.EQUAL && sat;
+				boolean isNeqNsat = getOperator(expr) == Ops.NOT_EQUAL && !sat;
+				boolean isSC = isEqSat || isNeqNsat;
+				if(isSC) {
+	            	sb.append("(");    	
+					if(isEqSat) {
+						if(rightIsVar) {
+    						sb.append(PostgresVisitor.asString(left));
+						} else if(leftIsVar) {
+    						sb.append(PostgresVisitor.asString(right));
+						}
+						eqNeq = true;
+    				} else if(isNeqNsat) {
+    					if(rightIsVar) {
+    						sb.append(PostgresVisitor.asString(left));
+						} else if(leftIsVar) {
+    						sb.append(PostgresVisitor.asString(right));
+						}
+						eqNeq = true;		    					
+					}
+	            	sb.append(")");    	
+				}
+			}
+		}
+		Randomly rand = new Randomly();
+		//choose how many values are inserted per column
+		int n = rand.getInteger(1, globalState.getDmbsSpecificOptions().nrInsertValues);   	    		
+		if(!varToEvaluate) {
+            for (int j = 0; j < n; j++) {
+            	sb.append("(");    	
+				//just use random numbers
+        		PostgresExpression generateConstant;
+                generateConstant = PostgresExpressionGenerator.generateConstant(globalState.getRandomly(),
+                        column.getType());
+	            sb.append(PostgresVisitor.asString(generateConstant));
+            	sb.append(")");
+            	if(j < n-1)
+	            	sb.append(",");    	
+
+            }
+		} else if(eqNeq) {
+			//if special case equal or not(not equal) [Not Satisfying] occured skip model evaluation
+		} else {
+            for (int j = 0; j < n; j++) {
+				Status state = s.check();
+				//check if statement is satisfiable
+	        	if(state.toInt() > 0) {
+	            	sb.append("(");    	
+
+	                //evaluate current column
+    				Expr e = s.getModel().eval(ctxt.mkIntConst(currColumn), true);
+    				int x = modelToInt(e);
+    				s.add(ctxt.mkNot(ctxt.mkEq(ctxt.mkIntConst(currColumn), ctxt.mkInt(x))));
+    				
+    				//System.err.println("name | value: " + name + " | " + ctxt.mkInt(x));
+    				PostgresExpression generateConstantFromZ3 = PostgresConstant.createIntConstant(x);
+    				if(sat)
+    					globalState.addUsedNumberSat(tableNr, var, x);
+    				else
+    					globalState.addUsedNumberNsat(tableNr, var, x);
+
+    				sb.append(PostgresVisitor.asString(generateConstantFromZ3));
+	            	sb.append(")");    	
+	            	if(j < n-1)
+		            	sb.append(",");  
+				//not satisfiable
+	        	} else 
+	        		throw new IgnoreMeException();
+            } 
+		}
+		sb.append(";");
     }
+    
 
     
-    private static boolean isVar(PostgresExpression expr) {
+    public static boolean isVar(PostgresExpression expr) {
     	String var = PostgresVisitor.asString(expr);
     	return var.contains("t");
     }
 
     
-    private static BoolExpr makeBoolExpr(Context ctxt, ArithExpr arg0, ArithExpr arg1, Ops op) {
+    public static BoolExpr makeBoolExpr(Context ctxt, ArithExpr arg0, ArithExpr arg1, Ops op) {
     	//add correct constraint according to operator
     	BoolExpr constraint;
 		switch (op) {
@@ -272,11 +330,11 @@ import com.microsoft.z3.*;
 		}
     }
     
-    private enum Ops {
+    public enum Ops {
     	GREATER_EQUAL, GREATER_THAN, LESS_EQUAL, LESS_THAN, EQUAL, NOT_EQUAL, NOP;
     }
     
-    private static Ops getOperator(PostgresExpression expr) {
+    public static Ops getOperator(PostgresExpression expr) {
     	String check = PostgresVisitor.asString(expr);
     	String ge = ">=";
     	String gt = ">";
@@ -322,7 +380,7 @@ import com.microsoft.z3.*;
 		}
     }
     
-    private static String varToString(PostgresExpression var) {
+    public static String varToString(PostgresExpression var) {
     	if(isVar(var))
     		return PostgresVisitor.asString(var);
     	else

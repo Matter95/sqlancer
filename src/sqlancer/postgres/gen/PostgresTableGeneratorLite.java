@@ -57,7 +57,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private void createStandard() throws AssertionError {
-        
+        //TODO:: Make the number of columns an option
     	sb.append("(");
         for (int i = 0; i < Randomly.smallNumber() + 1; i++) {
             if (i != 0) {
@@ -81,8 +81,11 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     private void createColumn(String columnName, String tableName) throws AssertionError {
         //
     	Randomly rand = new Randomly();
+    	int n = 0;
     	//between 1 and 3 checks
-    	int n = rand.getInteger(1, 3);   	
+    	if(globalState.getDmbsSpecificOptions().activateDbChecks) {
+        	n = rand.getInteger(1, globalState.getDmbsSpecificOptions().nrChecks);   	    		
+    	}
     	sb.append(columnName);
         sb.append(" ");    		
         PostgresDataType type = PostgresDataType.INT;
