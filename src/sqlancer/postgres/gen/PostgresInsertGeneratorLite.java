@@ -2,10 +2,6 @@ package sqlancer.postgres.gen;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import org.h2.util.CurrentTimestamp;
-
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryNode;
@@ -310,21 +306,19 @@ import com.microsoft.z3.*;
 
     
     public static BoolExpr makeBoolExpr(Context ctxt, ArithExpr arg0, ArithExpr arg1, Ops op) {
-    	//add correct constraint according to operator
-    	BoolExpr constraint;
-		switch (op) {
+    	switch (op) {
 		case GREATER_EQUAL:
-			return constraint = ctxt.mkGe(arg0, arg1);				
+			return ctxt.mkGe(arg0, arg1);				
 		case GREATER_THAN:
-			return constraint = ctxt.mkGt(arg0, arg1);			
+			return ctxt.mkGt(arg0, arg1);			
 		case LESS_EQUAL:
-			return constraint = ctxt.mkLe(arg0, arg1);
+			return ctxt.mkLe(arg0, arg1);
 		case LESS_THAN:
-			return constraint = ctxt.mkLt(arg0, arg1);				
+			return ctxt.mkLt(arg0, arg1);				
 		case EQUAL:
-			return constraint = ctxt.mkEq(arg0, arg1);				
+			return ctxt.mkEq(arg0, arg1);				
 		case NOT_EQUAL:
-			return constraint = ctxt.mkNot(ctxt.mkEq(arg0, arg1));
+			return ctxt.mkNot(ctxt.mkEq(arg0, arg1));
 		default:
 			throw new IgnoreMeException();
 		}

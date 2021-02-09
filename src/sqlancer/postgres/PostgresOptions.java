@@ -47,9 +47,6 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
     @Parameter(names = "--number-of-values-to-insert", description = "Specifies how many check statements per column are maximally generated")
     public int nrInsertValues = 8;
     
-    @Parameter(names = "--insert-check-table-values", description = "Specifies whether to insert values into the database before reaching the oracle", arity = 1)
-    public boolean insertCheckTableValues;
-    
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {
             @Override

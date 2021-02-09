@@ -190,7 +190,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             break;
         case INSERT_LITE:
         	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
-        		nrPerformed = r.getInteger(1, globalState.getOptions().getMaxNumberInserts());
+        		nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
         	}
         	else {
         		nrPerformed = 0;
@@ -207,7 +207,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     public void generateDatabase(PostgresGlobalState globalState) throws Exception {
         readFunctions(globalState);
         createTables(globalState, Randomly.fromOptions(4, 5, 6));
-        if(globalState.getDmbsSpecificOptions().insertCheckTableValues)
+        if(globalState.getDmbsSpecificOptions().activateDbChecks)
         	prepareTables(globalState);
     }
 
