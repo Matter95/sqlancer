@@ -38,6 +38,9 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
     @Parameter(names = "--use-simple-expression-generator", description = "Specifies whether to use the lite expression generator or the full generator", arity = 1)
     public boolean useSimpleExpressionGenerator;
     
+    @Parameter(names = "--use-modified-oracle", description = "Specifies whether to use the lite expression generator or the full generator", arity = 1)
+    public boolean useModifiedOracle = false;
+    
     @Parameter(names = "--activate-db-checks", description = "Specifies whether to use database check statements additionally to the where clause", arity = 1)
     public boolean activateDbChecks;
     
@@ -51,7 +54,7 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
         NOREC {
             @Override
             public TestOracle create(PostgresGlobalState globalState) throws SQLException {
-                if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator)
+                if(globalState.getDmbsSpecificOptions().useModifiedOracle)
                 	return new PostgresNoRECOracleLite(globalState);
                 else
                 	return new PostgresNoRECOracle(globalState);
