@@ -1,12 +1,19 @@
 package sqlancer.postgres;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.base.Stopwatch;
+import com.google.common.io.Files;
 
 import sqlancer.AbstractAction;
 import sqlancer.IgnoreMeException;
@@ -182,7 +189,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             break;
         case INSERT:
         	if(!globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
-        		nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        		//nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        		nrPerformed = 10;
         	}
         	else {
         		nrPerformed = 0;
@@ -190,7 +198,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             break;
         case INSERT_LITE:
         	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
-        		nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        		//nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+        		nrPerformed = 10;
         	}
         	else {
         		nrPerformed = 0;
@@ -205,10 +214,24 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
 
     @Override
     public void generateDatabase(PostgresGlobalState globalState) throws Exception {
+    	
+    	FileWriter csvWriter = new FileWriter("times_usecase1.csv", true);
+     		
+    	//csvWriter.append("S,M,N,#checks,elapsed Time");
         readFunctions(globalState);
         createTables(globalState, Randomly.fromOptions(4, 5, 6));
-        if(globalState.getDmbsSpecificOptions().activateDbChecks)
+        if(globalState.getDmbsSpecificOptions().activateDbChecks) {
+        	Stopwatch watch = Stopwatch.createStarted();
         	prepareTables(globalState);
+        	watch.stop();
+        	long time = watch.elapsed(TimeUnit.MILLISECONDS);
+        	csvWriter.append(Long.toString(time));
+        	csvWriter.append("\n");
+        	//System.err.println(watch.elapsed(TimeUnit.MILLISECONDS));
+        }
+        
+        csvWriter.flush();
+        csvWriter.close();
     }
 
     @Override
