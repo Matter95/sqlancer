@@ -66,11 +66,12 @@ public final class PostgresViewGenerator {
         // }
         sb.append(" AS (");
         PostgresSelect select;
-        //select the correct Query Generator
-        if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator)
-        	select = PostgresQueryGeneratorLite.createQuery(nrColumns, globalState);        	
-        else
-        	select = PostgresRandomQueryGenerator.createRandomQuery(nrColumns, globalState);
+        // select the correct Query Generator
+        if (globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+            select = PostgresQueryGeneratorLite.createQuery(nrColumns, globalState);
+        } else {
+            select = PostgresRandomQueryGenerator.createRandomQuery(nrColumns, globalState);
+        }
         sb.append(PostgresVisitor.asString(select));
         sb.append(")");
         if (Randomly.getBoolean() && !materialized && !recursive) {

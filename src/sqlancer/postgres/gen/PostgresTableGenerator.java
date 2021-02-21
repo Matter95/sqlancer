@@ -61,12 +61,11 @@ public class PostgresTableGenerator {
 
     public static Query generate(String tableName, PostgresSchema newSchema, boolean generateOnlyKnown,
             PostgresGlobalState globalState) {
-    	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
-    		return new PostgresTableGeneratorLite(tableName, newSchema, generateOnlyKnown, globalState).generate();
-    	}
-    	else {
-    		return new PostgresTableGenerator(tableName, newSchema, generateOnlyKnown, globalState).generate();
-    	}
+        if (globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+            return new PostgresTableGeneratorLite(tableName, newSchema, generateOnlyKnown, globalState).generate();
+        } else {
+            return new PostgresTableGenerator(tableName, newSchema, generateOnlyKnown, globalState).generate();
+        }
     }
 
     private Query generate() {
@@ -95,7 +94,7 @@ public class PostgresTableGenerator {
 
     private void createStandard() throws AssertionError {
         sb.append("(");
-        //TODO: random changed to deterministic number
+        // TODO: random changed to deterministic number
         for (int i = 0; i < globalState.getDmbsSpecificOptions().nrColumns; i++) {
             if (i != 0) {
                 sb.append(", ");
@@ -146,7 +145,7 @@ public class PostgresTableGenerator {
     private void createColumn(String name) throws AssertionError {
         sb.append(name);
         sb.append(" ");
-        //TODO: changed to only int types
+        // TODO: changed to only int types
         PostgresDataType type = PostgresDataType.INT;
         boolean serial = PostgresCommon.appendDataType(type, sb, true, generateOnlyKnown, globalState.getCollates());
         PostgresColumn c = new PostgresColumn(name, type);

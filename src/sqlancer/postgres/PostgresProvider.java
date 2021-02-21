@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
+
 import sqlancer.AbstractAction;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
@@ -92,9 +93,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         DELETE(PostgresDeleteGenerator::create), //
         DISCARD(PostgresDiscardGenerator::create), //
         DROP_INDEX(PostgresDropIndexGenerator::create), //
-        //added to choose the new insert Generator
-        INSERT_LITE(PostgresInsertGeneratorLite::insert),
-        INSERT(PostgresInsertGenerator::insert),
+        // added to choose the new insert Generator
+        INSERT_LITE(PostgresInsertGeneratorLite::insert), INSERT(PostgresInsertGenerator::insert),
         UPDATE(PostgresUpdateGenerator::create), //
         TRUNCATE(PostgresTruncateGenerator::create), //
         VACUUM(PostgresVacuumGenerator::create), //
@@ -138,41 +138,41 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         switch (a) {
         case CREATE_INDEX:
         case CLUSTER:
-            //nrPerformed = r.getInteger(0, 3);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 3);
+            nrPerformed = 0;
             break;
         case CREATE_STATISTICS:
-            //nrPerformed = r.getInteger(0, 5);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 5);
+            nrPerformed = 0;
             break;
         case DISCARD:
         case DROP_INDEX:
-            //nrPerformed = r.getInteger(0, 5);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 5);
+            nrPerformed = 0;
             break;
         case COMMIT:
-            //nrPerformed = r.getInteger(0, 0);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 0);
+            nrPerformed = 0;
             break;
         case ALTER_TABLE:
-            //nrPerformed = r.getInteger(0, 5);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 5);
+            nrPerformed = 0;
             break;
         case REINDEX:
         case RESET:
-           // nrPerformed = r.getInteger(0, 3);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 3);
+            nrPerformed = 0;
             break;
         case DELETE:
         case RESET_ROLE:
         case SET:
         case QUERY_CATALOG:
-            //nrPerformed = r.getInteger(0, 5);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 5);
+            nrPerformed = 0;
             break;
         case ANALYZE:
-            //nrPerformed = r.getInteger(0, 3);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 3);
+            nrPerformed = 0;
             break;
         case VACUUM:
         case SET_CONSTRAINTS:
@@ -183,36 +183,34 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         case CREATE_SEQUENCE:
         case DROP_STATISTICS:
         case TRUNCATE:
-            //nrPerformed = r.getInteger(0, 2);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 2);
+            nrPerformed = 0;
             break;
         case CREATE_VIEW:
-            //nrPerformed = r.getInteger(0, 2);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 2);
+            nrPerformed = 0;
             break;
         case UPDATE:
-            //nrPerformed = r.getInteger(0, 10);
-        	nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 10);
+            nrPerformed = 0;
             break;
         case INSERT:
-        	if(!globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
-        		//nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
-        		nrPerformed = globalState.getDmbsSpecificOptions().nrInserts;
-        	}
-        	else {
-        		nrPerformed = 0;
-        	}
+            if (!globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+                // nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+                nrPerformed = globalState.getDmbsSpecificOptions().nrInserts;
+            } else {
+                nrPerformed = 0;
+            }
             break;
         case INSERT_LITE:
-        	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
-        		//nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
-        		nrPerformed = globalState.getDmbsSpecificOptions().nrInserts;
+            if (globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
+                // nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+                nrPerformed = globalState.getDmbsSpecificOptions().nrInserts;
 
-        	}
-        	else {
-        		nrPerformed = 0;
-        	}
-        	break;
+            } else {
+                nrPerformed = 0;
+            }
+            break;
         default:
             throw new AssertionError(a);
         }
@@ -222,23 +220,23 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
 
     @Override
     public void generateDatabase(PostgresGlobalState globalState) throws Exception {
-    	
-    	FileWriter csvWriter = new FileWriter(globalState.getDmbsSpecificOptions().path, true);
-     		
-    	//csvWriter.append("S,M,N,#checks,elapsed Time");
+
+        FileWriter csvWriter = new FileWriter(globalState.getDmbsSpecificOptions().path, true);
+
+        // csvWriter.append("S,M,N,#checks,elapsed Time");
         readFunctions(globalState);
-        //TODO: change number of tables 
+        // TODO: change number of tables
         createTables(globalState, globalState.getDmbsSpecificOptions().nrTables);
-        if(globalState.getDmbsSpecificOptions().activateDbChecks || globalState.getDmbsSpecificOptions().standardRun) {
-        	Stopwatch watch = Stopwatch.createStarted();
-        	prepareTables(globalState);
-        	watch.stop();
-        	long time = watch.elapsed(TimeUnit.MILLISECONDS);
-        	csvWriter.append(Long.toString(time));
-        	csvWriter.append("\n");
-        	//System.err.println(watch.elapsed(TimeUnit.MILLISECONDS));
+        if (globalState.getDmbsSpecificOptions().activateDbChecks || globalState.getDmbsSpecificOptions().standardRun) {
+            Stopwatch watch = Stopwatch.createStarted();
+            prepareTables(globalState);
+            watch.stop();
+            long time = watch.elapsed(TimeUnit.MILLISECONDS);
+            csvWriter.append(Long.toString(time));
+            csvWriter.append("\n");
+            // System.err.println(watch.elapsed(TimeUnit.MILLISECONDS));
         }
-        
+
         csvWriter.flush();
         csvWriter.close();
     }
@@ -337,7 +335,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
                         throw new IgnoreMeException();
                     }
                 });
-        se.executeStatements();        
+        se.executeStatements();
         globalState.executeStatement(new QueryAdapter("COMMIT", true));
         globalState.executeStatement(new QueryAdapter("SET SESSION statement_timeout = 5000;\n"));
     }
@@ -365,5 +363,5 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     public String getDBMSName() {
         return "postgres";
     }
-    
+
 }

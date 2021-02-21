@@ -28,12 +28,12 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
 
     public PostgresTableGeneratorLite(String tableName, PostgresSchema newSchema, boolean generateOnlyKnown,
             PostgresGlobalState globalState) {
-    	super(tableName, newSchema, generateOnlyKnown, globalState);
+        super(tableName, newSchema, generateOnlyKnown, globalState);
         this.tableName = tableName;
         this.generateOnlyKnown = generateOnlyKnown;
         this.globalState = globalState;
         table = new PostgresTable(tableName, columnsToBeAdded, null, null, null, false, false);
-        
+
     }
 
     public static Query generate(String tableName, PostgresSchema newSchema, boolean generateOnlyKnown,
@@ -51,8 +51,8 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private void createStandard() throws AssertionError {
-        //TODO:: Make the number of columns an option
-    	sb.append("(");
+        // TODO:: Make the number of columns an option
+        sb.append("(");
         for (int i = 0; i < globalState.getDmbsSpecificOptions().nrColumns; i++) {
             if (i != 0) {
                 sb.append(", ");
@@ -60,29 +60,26 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
             String columnName = SQLite3Common.createColumnName(i);
             createColumn(columnName, tableName);
         }
-               
+
         sb.append(")");
         /*
-        PostgresCommon.generateWith(sb, globalState, errors);
-        if (Randomly.getBoolean() && isTemporaryTable) {
-            sb.append(" ON COMMIT ");
-            sb.append(Randomly.fromOptions("PRESERVE ROWS", "DELETE ROWS", "DROP"));
-            sb.append(" ");
-        }
-        */
+         * PostgresCommon.generateWith(sb, globalState, errors); if (Randomly.getBoolean() && isTemporaryTable) {
+         * sb.append(" ON COMMIT "); sb.append(Randomly.fromOptions("PRESERVE ROWS", "DELETE ROWS", "DROP"));
+         * sb.append(" "); }
+         */
     }
 
     private void createColumn(String columnName, String tableName) throws AssertionError {
         new Randomly();
-    	int n = 0;
-    	//between 1 and 3 checks
-    	if(globalState.getDmbsSpecificOptions().activateDbChecks) {
-        	//TODO: make random again?
-    		//n = rand.getInteger(1, globalState.getDmbsSpecificOptions().nrChecks); 
-    		n = globalState.getDmbsSpecificOptions().nrChecks; 
-    	}
-    	sb.append(columnName);
-        sb.append(" ");    		
+        int n = 0;
+        // between 1 and 3 checks
+        if (globalState.getDmbsSpecificOptions().activateDbChecks) {
+            // TODO: make random again?
+            // n = rand.getInteger(1, globalState.getDmbsSpecificOptions().nrChecks);
+            n = globalState.getDmbsSpecificOptions().nrChecks;
+        }
+        sb.append(columnName);
+        sb.append(" ");
         PostgresDataType type = PostgresDataType.INT;
         boolean serial = PostgresCommon.appendDataType(type, sb, true, generateOnlyKnown, globalState.getCollates());
         PostgresColumn c = new PostgresColumn(columnName, type);
@@ -90,40 +87,42 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         columnsToBeAdded.add(c);
         sb.append(" ");
 
-        for(int i = 0; i < n; i++) {
-    		if(i != 0) {
-    			sb.append(", ");
-    		}    
-          //TODO:: back to random, right now it guarantees a check constraint
+        for (int i = 0; i < n; i++) {
+            if (i != 0) {
+                sb.append(", ");
+            }
+            // TODO:: back to random, right now it guarantees a check constraint
             if (true) {
                 createColumnConstraint(type, serial, columnName, tableName);
             }
-    	}
-        
+        }
+
     }
 
     private enum ColumnConstraint {
-       CHECK
+        CHECK
     };
 
     private void createColumnConstraint(PostgresDataType type, boolean serial, String columnName, String tableName) {
         List<ColumnConstraint> constraintSubset = new ArrayList<ColumnConstraint>();
         constraintSubset.add(ColumnConstraint.CHECK);
-        
+
         for (ColumnConstraint c : constraintSubset) {
             sb.append(" ");
             switch (c) {
             case CHECK:
                 sb.append("CHECK (");
-                //save the check Statement in the gloablState
+                // save the check Statement in the gloablState
                 PostgresExpression check = PostgresExpressionGeneratorLite.generateCheckExpression(globalState,
                         columnsToBeAdded, columnName);
-                //System.err.println("TABLE NAME: " + tableName + " | " + "COLUMN NAME: " + columnName + getTableNumber(columnName));
-                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),getTableNumber(columnName));        
-                
+                // System.err.println("TABLE NAME: " + tableName + " | " + "COLUMN NAME: " + columnName +
+                // getTableNumber(columnName));
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
                 sb.append(PostgresVisitor.asString(check));
                 sb.append(")");
-                
+
                 errors.add("out of range");
                 break;
             default:
@@ -133,7 +132,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private static int getTableNumber(String tableName) {
-    	return Integer.parseInt(tableName.substring(1));
+        return Integer.parseInt(tableName.substring(1));
     }
-    
+
 }

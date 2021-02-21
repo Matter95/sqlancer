@@ -3,6 +3,7 @@ package sqlancer.postgres.gen;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import sqlancer.Randomly;
 import sqlancer.postgres.PostgresCompoundDataType;
 import sqlancer.postgres.PostgresGlobalState;
@@ -25,18 +26,18 @@ import sqlancer.postgres.ast.PostgresPostfixOperation;
 import sqlancer.postgres.ast.PostgresPostfixOperation.PostfixOperator;
 import sqlancer.postgres.ast.PostgresPrefixOperation;
 
-public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator{
+public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator {
 
     private final int maxDepth;
 
     private final Randomly r;
 
     private PostgresRowValue rw;
-    
+
     private PostgresGlobalState globalState;
 
     public PostgresExpressionGeneratorLite(PostgresGlobalState globalState) {
-    	super(globalState);
+        super(globalState);
         this.r = globalState.getRandomly();
         this.maxDepth = globalState.getOptions().getMaxExpressionDepth();
         this.globalState = globalState;
@@ -59,11 +60,11 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
         }
         return orderBys;
     }
-    /* 
-     * ALL AVAILABLE OPTIONS:
-        POSTFIX_OPERATOR, NOT, BINARY_LOGICAL_OPERATOR, BINARY_COMPARISON, FUNCTION, CAST, LIKE, BETWEEN, IN_OPERATION,
-        SIMILAR_TO, POSIX_REGEX, BINARY_RANGE_COMPARISON;
-    */
+
+    /*
+     * ALL AVAILABLE OPTIONS: POSTFIX_OPERATOR, NOT, BINARY_LOGICAL_OPERATOR, BINARY_COMPARISON, FUNCTION, CAST, LIKE,
+     * BETWEEN, IN_OPERATION, SIMILAR_TO, POSIX_REGEX, BINARY_RANGE_COMPARISON;
+     */
     private enum BooleanExpression {
         BINARY_COMPARISON;
     }
@@ -80,6 +81,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
             throw new AssertionError();
         }
     }
+
     private PostgresDataType getMeaningfulType() {
         // make it more likely that the expression does not only consist of constant
         // expressions
@@ -93,10 +95,10 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     private PostgresExpression generateComparison(int depth, PostgresDataType dataType) {
         PostgresExpression leftExpr = generateConstant(new Randomly(), PostgresDataType.TEXT, true);
         PostgresExpression rightExpr = generateExpression(depth + 1, dataType);
-        
+
         return getComparison(leftExpr, rightExpr);
     }
-    
+
     /*
      * check expression
      */
@@ -107,7 +109,8 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     }
 
     private PostgresExpression getComparison(PostgresExpression leftExpr, PostgresExpression rightExpr) {
-        List<PostgresBinaryComparisonOperator> validOptions = new ArrayList<>(Arrays.asList(PostgresBinaryComparisonOperator.values()));
+        List<PostgresBinaryComparisonOperator> validOptions = new ArrayList<>(
+                Arrays.asList(PostgresBinaryComparisonOperator.values()));
         validOptions.remove(PostgresBinaryComparisonOperator.IS_DISTINCT);
         validOptions.remove(PostgresBinaryComparisonOperator.IS_NOT_DISTINCT);
         PostgresBinaryComparisonOperation op = new PostgresBinaryComparisonOperation(leftExpr, rightExpr,
@@ -131,18 +134,17 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
         return exprInternal;
     }
 
-
     private PostgresExpression generateExpressionInternal(int depth, PostgresDataType dataType) throws AssertionError {
 
         if (depth > maxDepth || Randomly.getBoolean()) {
             // generic expression
-        	if (filterColumns(dataType).isEmpty()) {
+            if (filterColumns(dataType).isEmpty()) {
                 return generateConstant(r, dataType, false);
             } else {
                 return createColumnOfType(dataType);
             }
         } else {
-            switch (dataType) {           
+            switch (dataType) {
             case BOOLEAN:
                 return generateBooleanExpression(depth);
             case INT:
@@ -194,8 +196,8 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
 
     public PostgresExpression generateExpressionWithExpectedResult(PostgresDataType type) {
         this.expectedResult = true;
-        PostgresExpressionGeneratorLite gen = (PostgresExpressionGeneratorLite) new PostgresExpressionGeneratorLite(globalState).setColumns(columns)
-                .setRowValue(rw);
+        PostgresExpressionGeneratorLite gen = (PostgresExpressionGeneratorLite) new PostgresExpressionGeneratorLite(
+                globalState).setColumns(columns).setRowValue(rw);
         PostgresExpression expr;
         do {
             expr = gen.generateExpression(type);
@@ -260,12 +262,12 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
             PostgresDataType type) {
         return new PostgresExpressionGeneratorLite(globalState).setColumns(columns).generateExpression(0, type);
     }
-    
-    public static PostgresExpression generateCheckExpression(PostgresGlobalState globalState, List<PostgresColumn> columns,
-            String columName) {
-        return ((PostgresExpressionGeneratorLite) new PostgresExpressionGeneratorLite(globalState).setColumns(columns)).generateComparison(0, columName);
-    }
 
+    public static PostgresExpression generateCheckExpression(PostgresGlobalState globalState,
+            List<PostgresColumn> columns, String columName) {
+        return ((PostgresExpressionGeneratorLite) new PostgresExpressionGeneratorLite(globalState).setColumns(columns))
+                .generateComparison(0, columName);
+    }
 
     public List<PostgresExpression> generateExpressions(int nr) {
         List<PostgresExpression> expressions = new ArrayList<>();
@@ -275,8 +277,6 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
         return expressions;
     }
 
-    
-    
     public PostgresExpression generateExpression(PostgresDataType dataType) {
         return generateExpression(0, dataType);
     }
@@ -284,7 +284,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     public PostgresExpression generateCheckExpression(PostgresDataType dataType) {
         return generateExpression(0, dataType);
     }
-    
+
     public PostgresExpressionGeneratorLite setGlobalState(PostgresGlobalState globalState) {
         this.globalState = globalState;
         return this;
