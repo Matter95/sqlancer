@@ -1,3 +1,5 @@
+/*
+
 package sqlancer.dbms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,8 +30,9 @@ public class TestPostgres {
                 Main.executeMain(new String[] { "--random-seed", "0", "--timeout-seconds", TestConfig.SECONDS,
                         "--num-threads", "4", "--num-queries", TestConfig.NUM_QUERIES, "--random-string-generation",
                         "ALPHANUMERIC_SPECIALCHAR", "--database-prefix",
-                        "pqsdb" /* Workaround for connections not being closed */, "postgres", "--test-collations",
+                        "pqsdb" *//* Workaround for connections not being closed *//*, "postgres", "--test-collations",
                         "false", "--oracle", "pqs" }));
     }
 
 }
+*/
