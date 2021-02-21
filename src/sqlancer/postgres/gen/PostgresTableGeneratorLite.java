@@ -19,11 +19,7 @@ import sqlancer.sqlite3.gen.SQLite3Common;
 public class PostgresTableGeneratorLite extends PostgresTableGenerator {
 
     private final String tableName;
-    private boolean columnCanHavePrimaryKey;
-    private boolean columnHasPrimaryKey;
     private final StringBuilder sb = new StringBuilder();
-    private boolean isTemporaryTable;
-    private final PostgresSchema newSchema;
     private final List<PostgresColumn> columnsToBeAdded = new ArrayList<>();
     protected final ExpectedErrors errors = new ExpectedErrors();
     private final PostgresTable table;
@@ -34,7 +30,6 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
             PostgresGlobalState globalState) {
     	super(tableName, newSchema, generateOnlyKnown, globalState);
         this.tableName = tableName;
-        this.newSchema = newSchema;
         this.generateOnlyKnown = generateOnlyKnown;
         this.globalState = globalState;
         table = new PostgresTable(tableName, columnsToBeAdded, null, null, null, false, false);
@@ -47,7 +42,6 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     Query generate() {
-        columnCanHavePrimaryKey = true;
         sb.append("CREATE");
         sb.append(" TABLE");
         sb.append(" ");
@@ -59,7 +53,7 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     private void createStandard() throws AssertionError {
         //TODO:: Make the number of columns an option
     	sb.append("(");
-        for (int i = 0; i < Randomly.smallNumber() + 1; i++) {
+        for (int i = 0; i < globalState.getDmbsSpecificOptions().nrColumns; i++) {
             if (i != 0) {
                 sb.append(", ");
             }
@@ -79,12 +73,13 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private void createColumn(String columnName, String tableName) throws AssertionError {
-        //
-    	Randomly rand = new Randomly();
+        new Randomly();
     	int n = 0;
     	//between 1 and 3 checks
     	if(globalState.getDmbsSpecificOptions().activateDbChecks) {
-        	n = rand.getInteger(1, globalState.getDmbsSpecificOptions().nrChecks);   	    		
+        	//TODO: make random again?
+    		//n = rand.getInteger(1, globalState.getDmbsSpecificOptions().nrChecks); 
+    		n = globalState.getDmbsSpecificOptions().nrChecks; 
     	}
     	sb.append(columnName);
         sb.append(" ");    		

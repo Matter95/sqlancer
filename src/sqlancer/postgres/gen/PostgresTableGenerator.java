@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.Randomly;
-import sqlancer.common.ast.newast.TableReferenceNode;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.Query;
 import sqlancer.common.query.QueryAdapter;
@@ -96,7 +95,8 @@ public class PostgresTableGenerator {
 
     private void createStandard() throws AssertionError {
         sb.append("(");
-        for (int i = 0; i < Randomly.smallNumber() + 1; i++) {
+        //TODO: random changed to deterministic number
+        for (int i = 0; i < globalState.getDmbsSpecificOptions().nrColumns; i++) {
             if (i != 0) {
                 sb.append(", ");
             }
@@ -146,7 +146,8 @@ public class PostgresTableGenerator {
     private void createColumn(String name) throws AssertionError {
         sb.append(name);
         sb.append(" ");
-        PostgresDataType type = PostgresDataType.getRandomType();
+        //TODO: changed to only int types
+        PostgresDataType type = PostgresDataType.INT;
         boolean serial = PostgresCommon.appendDataType(type, sb, true, generateOnlyKnown, globalState.getCollates());
         PostgresColumn c = new PostgresColumn(name, type);
         c.setTable(table);

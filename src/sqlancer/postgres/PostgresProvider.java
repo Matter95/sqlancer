@@ -1,10 +1,8 @@
 package sqlancer.postgres;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -13,8 +11,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.io.Files;
-
 import sqlancer.AbstractAction;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
@@ -137,38 +133,46 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     }
 
     protected static int mapActions(PostgresGlobalState globalState, Action a) {
-        Randomly r = globalState.getRandomly();
+        globalState.getRandomly();
         int nrPerformed;
         switch (a) {
         case CREATE_INDEX:
         case CLUSTER:
-            nrPerformed = r.getInteger(0, 3);
+            //nrPerformed = r.getInteger(0, 3);
+        	nrPerformed = 0;
             break;
         case CREATE_STATISTICS:
-            nrPerformed = r.getInteger(0, 5);
+            //nrPerformed = r.getInteger(0, 5);
+        	nrPerformed = 0;
             break;
         case DISCARD:
         case DROP_INDEX:
-            nrPerformed = r.getInteger(0, 5);
+            //nrPerformed = r.getInteger(0, 5);
+        	nrPerformed = 0;
             break;
         case COMMIT:
-            nrPerformed = r.getInteger(0, 0);
+            //nrPerformed = r.getInteger(0, 0);
+        	nrPerformed = 0;
             break;
         case ALTER_TABLE:
-            nrPerformed = r.getInteger(0, 5);
+            //nrPerformed = r.getInteger(0, 5);
+        	nrPerformed = 0;
             break;
         case REINDEX:
         case RESET:
-            nrPerformed = r.getInteger(0, 3);
+           // nrPerformed = r.getInteger(0, 3);
+        	nrPerformed = 0;
             break;
         case DELETE:
         case RESET_ROLE:
         case SET:
         case QUERY_CATALOG:
-            nrPerformed = r.getInteger(0, 5);
+            //nrPerformed = r.getInteger(0, 5);
+        	nrPerformed = 0;
             break;
         case ANALYZE:
-            nrPerformed = r.getInteger(0, 3);
+            //nrPerformed = r.getInteger(0, 3);
+        	nrPerformed = 0;
             break;
         case VACUUM:
         case SET_CONSTRAINTS:
@@ -179,18 +183,21 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         case CREATE_SEQUENCE:
         case DROP_STATISTICS:
         case TRUNCATE:
-            nrPerformed = r.getInteger(0, 2);
+            //nrPerformed = r.getInteger(0, 2);
+        	nrPerformed = 0;
             break;
         case CREATE_VIEW:
-            nrPerformed = r.getInteger(0, 2);
+            //nrPerformed = r.getInteger(0, 2);
+        	nrPerformed = 0;
             break;
         case UPDATE:
-            nrPerformed = r.getInteger(0, 10);
+            //nrPerformed = r.getInteger(0, 10);
+        	nrPerformed = 0;
             break;
         case INSERT:
         	if(!globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
         		//nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
-        		nrPerformed = 10;
+        		nrPerformed = globalState.getDmbsSpecificOptions().nrInserts;
         	}
         	else {
         		nrPerformed = 0;
@@ -199,7 +206,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         case INSERT_LITE:
         	if(globalState.getDmbsSpecificOptions().useSimpleExpressionGenerator) {
         		//nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
-        		nrPerformed = 10;
+        		nrPerformed = globalState.getDmbsSpecificOptions().nrInserts;
+
         	}
         	else {
         		nrPerformed = 0;
@@ -215,12 +223,13 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     @Override
     public void generateDatabase(PostgresGlobalState globalState) throws Exception {
     	
-    	FileWriter csvWriter = new FileWriter("times_usecase1.csv", true);
+    	FileWriter csvWriter = new FileWriter(globalState.getDmbsSpecificOptions().path, true);
      		
     	//csvWriter.append("S,M,N,#checks,elapsed Time");
         readFunctions(globalState);
-        createTables(globalState, Randomly.fromOptions(4, 5, 6));
-        if(globalState.getDmbsSpecificOptions().activateDbChecks) {
+        //TODO: change number of tables 
+        createTables(globalState, globalState.getDmbsSpecificOptions().nrTables);
+        if(globalState.getDmbsSpecificOptions().activateDbChecks || globalState.getDmbsSpecificOptions().standardRun) {
         	Stopwatch watch = Stopwatch.createStarted();
         	prepareTables(globalState);
         	watch.stop();

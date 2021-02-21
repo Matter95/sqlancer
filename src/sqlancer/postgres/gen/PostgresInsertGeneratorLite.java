@@ -49,7 +49,8 @@ import com.microsoft.z3.*;
 
         //get random ceiling for number generation
 		//int n = Randomly.smallNumber() + 1;   
-        int n = 5;
+        //define the number of times insert is called
+        int n = globalState.getDmbsSpecificOptions().nrValues;
     	
         //initialize used Numbers
     	globalState.initializeUsedNumbersSat(globalState.getSchema().getDatabaseTables().size());
@@ -120,13 +121,14 @@ import com.microsoft.z3.*;
     	globalState.initializeUsedNumbersSat(globalState.getSchema().getDatabaseTables().size());
     	globalState.initializeUsedNumbersNsat(globalState.getSchema().getDatabaseTables().size());
     	int tSize = tables.size();
-		int n = Randomly.smallNumber() + 1;   	    		
-
+		//int n = Randomly.smallNumber() + 1;   	    		
+        //define the number of times insert is called
+        int n = globalState.getDmbsSpecificOptions().nrValues;
+        
 		for(PostgresTable table : tables) {
 	        List<PostgresColumn> columns = table.getColumns();
 
-	    	//generate a Z3 solver for satisfying the constraint and one that does not and initialize it accordingly
-	    	int size = columns.size();
+	    	columns.size();
         	List<List<String>> colNums = new ArrayList<>();
 
         	//get all column values
@@ -179,9 +181,7 @@ import com.microsoft.z3.*;
         List<String> numbers = new ArrayList<>();
     	int tableNr = getTableNumber(table.getName());
     	int columnNr = getTableNumber(column.getName());
-    	int ind = 0;
-
-        //get the list of checks for the given table
+    	//get the list of checks for the given table
     	ArrayList<Tuple> currConstraints;
     	//Add all used Numbers to the constraints
     	if(sat) {
@@ -290,9 +290,8 @@ import com.microsoft.z3.*;
 	            	}
 				}
 			}
-			ind++;
 		}
-		Randomly rand = new Randomly();
+		new Randomly();
 		//choose how many values are inserted per column
 		if(!varToEvaluate) {
             for (int j = 0; j < n; j++) {

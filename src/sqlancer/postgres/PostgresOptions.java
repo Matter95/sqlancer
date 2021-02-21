@@ -36,19 +36,34 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
     public String connectionURL = "postgresql://localhost:5432/test";
     
     @Parameter(names = "--use-simple-expression-generator", description = "Specifies whether to use the lite expression generator or the full generator", arity = 1)
-    public boolean useSimpleExpressionGenerator;
+    public boolean useSimpleExpressionGenerator = false;
     
     @Parameter(names = "--use-modified-oracle", description = "Specifies whether to use the lite expression generator or the full generator", arity = 1)
     public boolean useModifiedOracle = false;
+ 
+    @Parameter(names = "--activate-db-checks", description = "Specifies whether to use database check statements to fill the database with values", arity = 1)
+    public boolean activateDbChecks = false;
     
-    @Parameter(names = "--activate-db-checks", description = "Specifies whether to use database check statements additionally to the where clause", arity = 1)
-    public boolean activateDbChecks;
+    @Parameter(names = "--standard-run", description = "Specifies whether to fill the database with values or not", arity = 1)
+    public boolean standardRun = true;
     
     @Parameter(names = "--number-of-checks", description = "Specifies how many check statements per column are maximally generated")
     public int nrChecks = 3;
     
-    @Parameter(names = "--number-of-values-to-insert", description = "Specifies how many check statements per column are maximally generated")
-    public int nrInsertValues = 8;
+    @Parameter(names = "--number-of-values", description = "Specifies how many values per insert are added")
+    public int nrValues = 5;
+    
+    @Parameter(names = "--number-of-tables", description = "Specifies how many tables a database should generate")
+    public int nrTables = 4;
+    
+    @Parameter(names = "--number-of-columns", description = "Specifies how many columns a table should generate")
+    public int nrColumns = 4;
+    
+    @Parameter(names = "--number-of-inserts", description = "Specifies how many times the insert action is called")
+    public int nrInserts = 10;
+    
+    @Parameter(names = "--output-path", description = "Specifies in which file to save the elapsed time logs")
+    public String path = "times.csv";
     
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {

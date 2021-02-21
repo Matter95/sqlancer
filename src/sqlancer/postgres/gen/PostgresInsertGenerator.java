@@ -70,7 +70,9 @@ public final class PostgresInsertGenerator {
                 sb.append(sbRowValue);
             }
         } else {
-            int n = Randomly.smallNumber() + 1;
+            //int n = Randomly.smallNumber() + 1;
+            int n = globalState.getDmbsSpecificOptions().nrValues;
+
             for (int i = 0; i < n; i++) {
                 if (i != 0) {
                     sb.append(", ");

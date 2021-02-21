@@ -182,6 +182,7 @@
     </plugins>
   </build>
 
+
   <dependencies>
     <dependency>
       <groupId>com.beust</groupId>
@@ -234,6 +235,11 @@
       <artifactId>h2</artifactId>
       <version>1.4.200</version>
     </dependency>
+	<dependency>
+	  <groupId>org.sosy-lab</groupId>
+	  <artifactId>javasmt-solver-z3</artifactId>
+	  <version>4.8.9-sosy1</version>
+	</dependency>
   </dependencies>
   <reporting>
     <plugins>
