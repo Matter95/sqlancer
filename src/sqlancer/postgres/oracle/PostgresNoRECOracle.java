@@ -23,13 +23,16 @@ import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
 import sqlancer.postgres.PostgresSchema.PostgresTables;
 import sqlancer.postgres.PostgresVisitor;
+import sqlancer.postgres.ast.PostgresBinaryComparisonOperation;
 import sqlancer.postgres.ast.PostgresCastOperation;
 import sqlancer.postgres.ast.PostgresColumnValue;
+import sqlancer.postgres.ast.PostgresConstant;
 import sqlancer.postgres.ast.PostgresExpression;
 import sqlancer.postgres.ast.PostgresJoin;
 import sqlancer.postgres.ast.PostgresJoin.PostgresJoinType;
 import sqlancer.postgres.ast.PostgresPostfixText;
 import sqlancer.postgres.ast.PostgresSelect;
+import sqlancer.postgres.ast.PostgresBinaryComparisonOperation.PostgresBinaryComparisonOperator;
 import sqlancer.postgres.ast.PostgresSelect.PostgresFromTable;
 import sqlancer.postgres.ast.PostgresSelect.PostgresSubquery;
 import sqlancer.postgres.ast.PostgresSelect.SelectType;
@@ -40,9 +43,11 @@ import sqlancer.postgres.oracle.tlp.PostgresTLPBase;
 public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implements TestOracle {
 
     private final PostgresSchema s;
+    private PostgresGlobalState globalState;
 
     public PostgresNoRECOracle(PostgresGlobalState globalState) {
         super(globalState);
+        this.globalState = globalState;
         this.s = globalState.getSchema();
         PostgresCommon.addCommonExpressionErrors(errors);
         PostgresCommon.addCommonFetchErrors(errors);
@@ -50,9 +55,16 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
 
     @Override
     public void check() throws SQLException {
+    	
         PostgresTables randomTables = s.getRandomTableNonEmptyTables();
         List<PostgresColumn> columns = randomTables.getColumns();
-        PostgresExpression randomWhereCondition = getRandomWhereCondition(columns);
+        PostgresExpression randomWhereCondition;
+        if(globalState.getDmbsSpecificOptions().fixedQuery) {
+        	//Create fixed Query t0.c0 > 42
+        	randomWhereCondition = new PostgresBinaryComparisonOperation(PostgresConstant.createTextConstant("t0.c0"), PostgresConstant.createIntConstant(42), PostgresBinaryComparisonOperator.GREATER);        	        	
+        } else {
+        	randomWhereCondition = getRandomWhereCondition(columns);      	
+        }
         List<PostgresTable> tables = randomTables.getTables();
 
         List<PostgresJoin> joinStatements = getJoinStatements(state, columns, tables);

@@ -46,6 +46,9 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
 
     @Parameter(names = "--standard-run", description = "Specifies whether to fill the database with values or not", arity = 1)
     public boolean standardRun = true;
+    
+    @Parameter(names = "--fixed-query", description = "Specifies whether to use a fixed query or not")
+    public boolean fixedQuery = false;
 
     @Parameter(names = "--number-of-checks", description = "Specifies how many check statements per column are maximally generated")
     public int nrChecks = 3;
@@ -65,6 +68,8 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
     @Parameter(names = "--output-path", description = "Specifies in which file to save the elapsed time logs")
     public String path = "times.csv";
 
+    @Parameter(names = "--fixed-query-number", description = "Specifies which fixed query to choose")
+    public int fixedQueryNr = 0;
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {
             @Override
