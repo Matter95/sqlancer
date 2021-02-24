@@ -10,6 +10,8 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.mariadb.jdbc.util.Options;
+
 import com.google.common.base.Stopwatch;
 
 import sqlancer.AbstractAction;
@@ -232,8 +234,13 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             prepareTables(globalState);
             watch.stop();
             long time = watch.elapsed(TimeUnit.MILLISECONDS);
-            csvWriter.append(Long.toString(time));
-            csvWriter.append("\n");
+            int N = globalState.getDmbsSpecificOptions().nrInserts * globalState.getDmbsSpecificOptions().nrTables
+                    * globalState.getDmbsSpecificOptions().nrColumns * globalState.getDmbsSpecificOptions().nrValues;
+            if(globalState.getDmbsSpecificOptions().standardRun) {
+	            csvWriter.append(Integer.toString(N) + ",");
+	            csvWriter.append(Long.toString(time));
+	           	csvWriter.append("\n");
+            }
             // System.err.println(watch.elapsed(TimeUnit.MILLISECONDS));
         }
 

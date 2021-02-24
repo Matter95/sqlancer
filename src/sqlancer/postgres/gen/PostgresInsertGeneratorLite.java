@@ -49,7 +49,8 @@ public class PostgresInsertGeneratorLite {
         errors.add("but expression is of type");
         StringBuilder sb = new StringBuilder();
 
-        List<PostgresColumn> columns = table.getRandomNonEmptyColumnSubset();
+        List<PostgresColumn> columns = table
+                .getRandomNonEmptyColumnSubset(globalState.getDmbsSpecificOptions().nrColumns);
 
         // get random ceiling for number generation
         // int n = Randomly.smallNumber() + 1;

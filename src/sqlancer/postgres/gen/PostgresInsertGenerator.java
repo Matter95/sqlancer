@@ -38,7 +38,8 @@ public final class PostgresInsertGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("INSERT INTO ");
         sb.append(table.getName());
-        List<PostgresColumn> columns = table.getRandomNonEmptyColumnSubset();
+        List<PostgresColumn> columns = table
+                .getRandomNonEmptyColumnSubset(globalState.getDmbsSpecificOptions().nrColumns);
         sb.append("(");
         sb.append(columns.stream().map(c -> c.getName()).collect(Collectors.joining(", ")));
         sb.append(")");

@@ -1,5 +1,7 @@
 package sqlancer.postgres.oracle;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -54,23 +56,30 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
     }
 
     @Override
-    public void check() throws SQLException {
-    	
+    public void check() throws SQLException, IOException {
+
         PostgresTables randomTables = s.getRandomTableNonEmptyTables();
         List<PostgresColumn> columns = randomTables.getColumns();
         PostgresExpression randomWhereCondition;
-        if(globalState.getDmbsSpecificOptions().fixedQuery) {
-        	//Create fixed Query t0.c0 > 42
-        	randomWhereCondition = new PostgresBinaryComparisonOperation(PostgresConstant.createTextConstant("t0.c0"), PostgresConstant.createIntConstant(42), PostgresBinaryComparisonOperator.GREATER);        	        	
+        if (globalState.getDmbsSpecificOptions().fixedQuery) {
+            // Create fixed Query t0.c0 > 42
+            randomWhereCondition = new PostgresBinaryComparisonOperation(PostgresConstant.createTextConstant("t0.c0"),
+                    PostgresConstant.createIntConstant(42), PostgresBinaryComparisonOperator.GREATER);
         } else {
-        	randomWhereCondition = getRandomWhereCondition(columns);      	
+            randomWhereCondition = getRandomWhereCondition(columns);
         }
         List<PostgresTable> tables = randomTables.getTables();
 
         List<PostgresJoin> joinStatements = getJoinStatements(state, columns, tables);
         List<PostgresExpression> fromTables = tables.stream().map(t -> new PostgresFromTable(t, Randomly.getBoolean()))
                 .collect(Collectors.toList());
+        FileWriter csvWriter = new FileWriter(globalState.getDmbsSpecificOptions().path, true);
         int secondCount = getUnoptimizedQueryCount(fromTables, randomWhereCondition, joinStatements);
+        if(!globalState.getDmbsSpecificOptions().standardRun) {
+        	csvWriter.append("," + String.valueOf(secondCount));
+        }
+        csvWriter.flush();
+        csvWriter.close();
         int firstCount = getOptimizedQueryCount(fromTables, columns, randomWhereCondition, joinStatements);
         if (firstCount == -1 || secondCount == -1) {
             throw new IgnoreMeException();

@@ -46,7 +46,7 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
 
     @Parameter(names = "--standard-run", description = "Specifies whether to fill the database with values or not", arity = 1)
     public boolean standardRun = true;
-    
+
     @Parameter(names = "--fixed-query", description = "Specifies whether to use a fixed query or not")
     public boolean fixedQuery = false;
 
@@ -70,6 +70,7 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
 
     @Parameter(names = "--fixed-query-number", description = "Specifies which fixed query to choose")
     public int fixedQueryNr = 0;
+
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {
             @Override
