@@ -3,7 +3,6 @@ package sqlancer.postgres.gen;
 import java.util.ArrayList;
 import java.util.List;
 
-import sqlancer.Randomly;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.Query;
 import sqlancer.common.query.QueryAdapter;
@@ -13,7 +12,11 @@ import sqlancer.postgres.PostgresSchema.PostgresColumn;
 import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
 import sqlancer.postgres.PostgresVisitor;
+import sqlancer.postgres.ast.PostgresBinaryComparisonOperation;
+import sqlancer.postgres.ast.PostgresColumnValue;
+import sqlancer.postgres.ast.PostgresConstant;
 import sqlancer.postgres.ast.PostgresExpression;
+import sqlancer.postgres.ast.PostgresBinaryComparisonOperation.PostgresBinaryComparisonOperator;
 import sqlancer.sqlite3.gen.SQLite3Common;
 
 public class PostgresTableGeneratorLite extends PostgresTableGenerator {
@@ -70,8 +73,9 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
     }
 
     private void createColumn(String columnName, String tableName) throws AssertionError {
-        new Randomly();
         int n = 0;
+        globalState.initializeCheckStatements(globalState.getDmbsSpecificOptions().nrTables,
+                globalState.getDmbsSpecificOptions().nrColumns);
         // between 1 and 3 checks
         if (globalState.getDmbsSpecificOptions().activateDbChecks) {
             // TODO: make random again?
@@ -86,17 +90,214 @@ public class PostgresTableGeneratorLite extends PostgresTableGenerator {
         c.setTable(table);
         columnsToBeAdded.add(c);
         sb.append(" ");
+        PostgresExpression check;
+        int fixedQuery = globalState.getDmbsSpecificOptions().fixedQueryNr;
+        if (c.getName().equals("c0") && (fixedQuery == 0 || fixedQuery == 1 || fixedQuery == 2)) {
 
-        for (int i = 0; i < n; i++) {
-            if (i != 0) {
-                sb.append(", ");
+            PostgresExpression column_0 = PostgresColumnValue.create(c, null);
+
+            switch (globalState.getDmbsSpecificOptions().queryDiff) {
+            case 0:
+                // Create fixed Query t0.c0 > 0
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+
+                errors.add("out of range");
+
+                break;
+            case 1:
+                // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000)
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append("), ");
+
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
+                        PostgresBinaryComparisonOperator.LESS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+
+                errors.add("out of range");
+                break;
+            case 2:
+                // Create fixed Query (t0.c0 > 5000 AND t0.c0 < 10000)
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(5000),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append("), ");
+
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
+                        PostgresBinaryComparisonOperator.LESS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+
+                errors.add("out of range");
+                break;
+            default:
+                throw new AssertionError(sb);
             }
-            // TODO:: back to random, right now it guarantees a check constraint
-            if (true) {
-                createColumnConstraint(type, serial, columnName, tableName);
+        } else if (c.getName().equals("c1") && (fixedQuery == 1 || fixedQuery == 2)) {
+            PostgresExpression column_1 = PostgresColumnValue.create(c, null);
+
+            switch (globalState.getDmbsSpecificOptions().queryDiff) {
+            case 0:
+                // Create fixed Query t0.c0 > 0 AND t0.c1 < 50000
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(50000),
+                        PostgresBinaryComparisonOperator.LESS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+                errors.add("out of range");
+                break;
+            case 1:
+                // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000) AND (t0.c1 < 10000 AND t0.c1 > 40000)
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(50000),
+                        PostgresBinaryComparisonOperator.LESS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+                sb.append(PostgresVisitor.asString(check));
+                sb.append("), ");
+
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(40000),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+                errors.add("out of range");
+                break;
+
+            case 2:
+                // Create fixed Query (t0.c0 > 5000 AND t0.c0 < 10000) AND (t0.c1 < 50000 AND t0.c1 > 45000)
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(50000),
+                        PostgresBinaryComparisonOperator.LESS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+                sb.append(PostgresVisitor.asString(check));
+                sb.append("), ");
+
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(45000),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+                errors.add("out of range");
+                break;
+            default:
+                throw new AssertionError(sb);
+            }
+
+        } else if (c.getName().equals("c2") && fixedQuery == 2) {
+            // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000) AND (t0.c1 < 5000 AND t0.c1 > -5000) AND (t0.c2 >= 300
+            // AND t0.c2 <= 1000)
+            PostgresExpression column_2 = PostgresColumnValue.create(c, null);
+
+            switch (globalState.getDmbsSpecificOptions().queryDiff) {
+            case 0:
+                // Create fixed Query t0.c0 > 0 AND t0.c1 < 10000 AND t0.c2 > -15000
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_2, PostgresConstant.createIntConstant(-15000),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+
+                errors.add("out of range");
+                break;
+            case 1:
+                // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000) AND (t0.c1 < 10000 AND t0.c1 > -5000) AND (t0.c2 >
+                // -15000 AND t0.c2 <= -5000)
+                sb.append("CHECK (");
+
+                check = new PostgresBinaryComparisonOperation(column_2, PostgresConstant.createIntConstant(-15000),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+                sb.append(PostgresVisitor.asString(check));
+                sb.append("), ");
+
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_2, PostgresConstant.createIntConstant(-5000),
+                        PostgresBinaryComparisonOperator.LESS_EQUALS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+
+                errors.add("out of range");
+                break;
+            case 2:
+                // Create fixed Query (t0.c0 > 5000 AND t0.c0 < 10000) AND (t0.c1 < 5000 AND t0.c1 > -5000) AND (t0.c2 >
+                // -10000 AND t0.c2 <= -5000)
+                sb.append("CHECK (");
+
+                check = new PostgresBinaryComparisonOperation(column_2, PostgresConstant.createIntConstant(-10000),
+                        PostgresBinaryComparisonOperator.GREATER);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+                sb.append(PostgresVisitor.asString(check));
+                sb.append("), ");
+
+                sb.append("CHECK (");
+                check = new PostgresBinaryComparisonOperation(column_2, PostgresConstant.createIntConstant(-5000),
+                        PostgresBinaryComparisonOperator.LESS_EQUALS);
+                globalState.addCheckStatementsForTableNColumnM(check, getTableNumber(tableName),
+                        getTableNumber(columnName));
+
+                sb.append(PostgresVisitor.asString(check));
+                sb.append(")");
+
+                errors.add("out of range");
+                break;
+            default:
+                throw new AssertionError(sb);
+            }
+        } else {
+            for (int i = 0; i < n; i++) {
+                if (i != 0) {
+                    sb.append(", ");
+                }
+                // TODO:: back to random, right now it guarantees a check constraint
+                if (true) {
+                    createColumnConstraint(type, serial, columnName, tableName);
+                }
             }
         }
-
     }
 
     private enum ColumnConstraint {

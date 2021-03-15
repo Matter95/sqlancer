@@ -69,7 +69,13 @@ public class PostgresOptions implements DBMSSpecificOptions<PostgresOracleFactor
     public String path = "times.csv";
 
     @Parameter(names = "--fixed-query-number", description = "Specifies which fixed query to choose")
-    public int fixedQueryNr = 0;
+    public int fixedQueryNr = -1;
+
+    @Parameter(names = "--query-difficulty", description = "Specifies the query difficulty")
+    public int queryDiff = 0;
+
+    @Parameter(names = "--query-nr", description = "Specifies the query number")
+    public int queryNr = 0;
 
     public enum PostgresOracleFactory implements OracleFactory<PostgresGlobalState> {
         NOREC {

@@ -57,8 +57,6 @@ public class PostgresGlobalState extends GlobalState<PostgresOptions, PostgresSc
     private List<Character> allowedFunctionTypes = Arrays.asList(IMMUTABLE, STABLE, VOLATILE);
 
     public PostgresGlobalState() {
-        // TODO: maybe make these values options?
-        initializeCheckStatements(8, 10);
     }
 
     @Override

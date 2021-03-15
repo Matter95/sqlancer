@@ -93,7 +93,7 @@ public class PostgresExpressionGeneratorLite extends PostgresExpressionGenerator
     }
 
     private PostgresExpression generateComparison(int depth, PostgresDataType dataType) {
-        PostgresExpression leftExpr = generateConstant(new Randomly(), PostgresDataType.TEXT, true);
+        PostgresExpression leftExpr = generateConstant(globalState.getRandomly(), PostgresDataType.TEXT, true);
         PostgresExpression rightExpr = generateExpression(depth + 1, dataType);
 
         return getComparison(leftExpr, rightExpr);
