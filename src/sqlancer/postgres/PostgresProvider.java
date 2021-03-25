@@ -220,32 +220,13 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
 
     @Override
     public void generateDatabase(PostgresGlobalState globalState) throws Exception {
-
-        FileWriter csvWriter = new FileWriter(globalState.getDmbsSpecificOptions().path, true);
-
-        // csvWriter.append("S,M,N,#checks,elapsed Time");
         readFunctions(globalState);
-        // TODO: change number of tables
+
         createTables(globalState, globalState.getDmbsSpecificOptions().nrTables);
         if (globalState.getDmbsSpecificOptions().activateDbChecks || globalState.getDmbsSpecificOptions().standardRun) {
-            Stopwatch watch = Stopwatch.createStarted();
             prepareTables(globalState);
-            watch.stop();
-            long time = watch.elapsed(TimeUnit.MILLISECONDS);
-            // int N = globalState.getDmbsSpecificOptions().nrInserts * globalState.getDmbsSpecificOptions().nrTables
-            // * globalState.getDmbsSpecificOptions().nrColumns * globalState.getDmbsSpecificOptions().nrValues;
-            // int I = globalState.getDmbsSpecificOptions().nrInserts;
-            // int C = globalState.getDmbsSpecificOptions().nrColumns;
-            // int V = globalState.getDmbsSpecificOptions().nrValues;
-            // csvWriter.append(Integer.toString(N) + ",");
-            // csvWriter.append(Integer.toString(I) + ",");
-            // csvWriter.append(Integer.toString(C) + ",");
-            // csvWriter.append(Integer.toString(V) + ",");
-            csvWriter.append(Long.toString(time));
         }
 
-        csvWriter.flush();
-        csvWriter.close();
     }
 
     @Override

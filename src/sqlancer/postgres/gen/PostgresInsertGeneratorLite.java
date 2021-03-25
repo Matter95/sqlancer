@@ -332,7 +332,6 @@ public class PostgresInsertGeneratorLite {
             }
         }
         // if special case equal or not(not equal) [Not Satisfying] occured skip model evaluation
-
         return numbers;
     }
 

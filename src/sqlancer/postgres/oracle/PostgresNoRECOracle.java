@@ -59,215 +59,35 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
 
     @Override
     public void check() throws SQLException, IOException {
-        FileWriter csvWriter = new FileWriter(globalState.getDmbsSpecificOptions().path, true);
-        int secondCount = -1;
-        try {
-            PostgresTables randomTables = s.getRandomTableNonEmptyTables();
-            List<PostgresColumn> columns = randomTables.getColumns();
-            PostgresExpression randomWhereCondition;
+    	int secondCount = -1;
+        PostgresTables randomTables = s.getRandomTableNonEmptyTables();
+        List<PostgresColumn> columns = randomTables.getColumns();
 
-            PostgresExpression column_0 = PostgresColumnValue.create(columns.get(0), null);
-            PostgresExpression column_1 = PostgresColumnValue.create(columns.get(1), null);
-            PostgresExpression column_2 = PostgresColumnValue.create(columns.get(2), null);
+        PostgresExpression randomWhereCondition = getRandomWhereCondition(columns);
+        // System.err.println(PostgresVisitor.asString(randomWhereCondition));
+        List<PostgresTable> tables = randomTables.getTables();
 
-            switch (globalState.getDmbsSpecificOptions().fixedQueryNr) {
-            case 0:
-                switch (globalState.getDmbsSpecificOptions().queryDiff) {
-                case 0:
-                    // Create fixed Query t0.c0 > 0
-                    randomWhereCondition = new PostgresBinaryComparisonOperation(column_0,
-                            PostgresConstant.createIntConstant(0), PostgresBinaryComparisonOperator.GREATER);
-                    break;
-                case 1:
-                    // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000)
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND);
-                    break;
-                case 2:
-                    // Create fixed Query (t0.c0 > 5000 AND t0.c0 < 10000)
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(5000),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND);
-                    break;
-                default:
-                    throw new AssertionError();
-                }
+        List<PostgresJoin> joinStatements = getJoinStatements(state, columns, tables);
+        List<PostgresExpression> fromTables = tables.stream()
+                .map(t -> new PostgresFromTable(t, Randomly.getBoolean())).collect(Collectors.toList());
+        secondCount = getUnoptimizedQueryCount(fromTables, randomWhereCondition, joinStatements);
 
-                break;
-            case 1:
-                switch (globalState.getDmbsSpecificOptions().queryDiff) {
-                case 0:
-                    // Create fixed Query t0.c0 > 0 AND t0.c1 < 50000
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(50000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND);
-
-                    break;
-                case 1:
-                    // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000) AND (t0.c1 < 50000 AND t0.c1 > 40000)
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND),
-
-                            new PostgresBinaryLogicalOperation(new PostgresBinaryComparisonOperation(column_1,
-                                    PostgresConstant.createIntConstant(50000), PostgresBinaryComparisonOperator.LESS),
-                                    new PostgresBinaryComparisonOperation(column_1,
-                                            PostgresConstant.createIntConstant(40000),
-                                            PostgresBinaryComparisonOperator.GREATER),
-                                    BinaryLogicalOperator.AND),
-                            BinaryLogicalOperator.AND);
-                    break;
-                case 2:
-                    // Create fixed Query (t0.c0 > 5000 AND t0.c0 < 10000) AND (t0.c1 < 50000 AND t0.c1 > 45000)
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(5000),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND),
-
-                            new PostgresBinaryLogicalOperation(new PostgresBinaryComparisonOperation(column_1,
-                                    PostgresConstant.createIntConstant(50000), PostgresBinaryComparisonOperator.LESS),
-                                    new PostgresBinaryComparisonOperation(column_1,
-                                            PostgresConstant.createIntConstant(45000),
-                                            PostgresBinaryComparisonOperator.GREATER),
-                                    BinaryLogicalOperator.AND),
-                            BinaryLogicalOperator.AND);
-                    break;
-                default:
-                    throw new AssertionError();
-                }
-
-                break;
-            case 2:
-                switch (globalState.getDmbsSpecificOptions().queryDiff) {
-                case 0:
-                    // Create fixed Query t0.c0 > 0 AND t0.c1 < 50000 AND t0.c2 > -15000
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_1, PostgresConstant.createIntConstant(50000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND),
-                            new PostgresBinaryComparisonOperation(column_2, PostgresConstant.createIntConstant(-15000),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            BinaryLogicalOperator.AND);
-
-                    break;
-                case 1:
-
-                    // Create fixed Query (t0.c0 > 0 AND t0.c0 < 10000) AND (t0.c1 < 50000 AND t0.c1 > 40000) AND (t0.c2
-                    // > -15000 AND t0.c2 <= -5000)
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(10000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND),
-
-                            new PostgresBinaryLogicalOperation(
-                                    new PostgresBinaryLogicalOperation(
-                                            new PostgresBinaryComparisonOperation(column_1,
-                                                    PostgresConstant.createIntConstant(50000),
-                                                    PostgresBinaryComparisonOperator.LESS),
-                                            new PostgresBinaryComparisonOperation(column_1,
-                                                    PostgresConstant.createIntConstant(40000),
-                                                    PostgresBinaryComparisonOperator.GREATER),
-                                            BinaryLogicalOperator.AND),
-                                    new PostgresBinaryLogicalOperation(
-                                            new PostgresBinaryComparisonOperation(column_2,
-                                                    PostgresConstant.createIntConstant(-15000),
-                                                    PostgresBinaryComparisonOperator.GREATER),
-                                            new PostgresBinaryComparisonOperation(column_2,
-                                                    PostgresConstant.createIntConstant(-5000),
-                                                    PostgresBinaryComparisonOperator.LESS_EQUALS),
-                                            BinaryLogicalOperator.AND),
-                                    BinaryLogicalOperator.AND),
-                            BinaryLogicalOperator.AND);
-                    break;
-                case 2:
-                    // Create fixed Query (t0.c0 > 5000 AND t0.c0 < 10000) AND (t0.c1 < 50000 AND t0.c1 > 45000) AND
-                    // (t0.c2 > -10000 AND t0.c2 <= -5000)
-                    randomWhereCondition = new PostgresBinaryLogicalOperation(new PostgresBinaryLogicalOperation(
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(0),
-                                    PostgresBinaryComparisonOperator.GREATER),
-                            new PostgresBinaryComparisonOperation(column_0, PostgresConstant.createIntConstant(5000),
-                                    PostgresBinaryComparisonOperator.LESS),
-                            BinaryLogicalOperator.AND),
-
-                            new PostgresBinaryLogicalOperation(
-                                    new PostgresBinaryLogicalOperation(
-                                            new PostgresBinaryComparisonOperation(column_1,
-                                                    PostgresConstant.createIntConstant(50000),
-                                                    PostgresBinaryComparisonOperator.LESS),
-                                            new PostgresBinaryComparisonOperation(column_1,
-                                                    PostgresConstant.createIntConstant(45000),
-                                                    PostgresBinaryComparisonOperator.GREATER),
-                                            BinaryLogicalOperator.AND),
-                                    new PostgresBinaryLogicalOperation(
-                                            new PostgresBinaryComparisonOperation(column_2,
-                                                    PostgresConstant.createIntConstant(-10000),
-                                                    PostgresBinaryComparisonOperator.GREATER),
-                                            new PostgresBinaryComparisonOperation(column_2,
-                                                    PostgresConstant.createIntConstant(-5000),
-                                                    PostgresBinaryComparisonOperator.LESS_EQUALS),
-                                            BinaryLogicalOperator.AND),
-                                    BinaryLogicalOperator.AND),
-                            BinaryLogicalOperator.AND);
-                    break;
-                default:
-                    throw new AssertionError();
-                }
-            default:
-                randomWhereCondition = getRandomWhereCondition(columns);
-                break;
-            }
-            // System.err.println(PostgresVisitor.asString(randomWhereCondition));
-            List<PostgresTable> tables = randomTables.getTables();
-
-            List<PostgresJoin> joinStatements = getJoinStatements(state, columns, tables);
-            List<PostgresExpression> fromTables = tables.stream()
-                    .map(t -> new PostgresFromTable(t, Randomly.getBoolean())).collect(Collectors.toList());
-            secondCount = getUnoptimizedQueryCount(fromTables, randomWhereCondition, joinStatements);
-
-            int firstCount = getOptimizedQueryCount(fromTables, columns, randomWhereCondition, joinStatements);
-            if (firstCount == -1 || secondCount == -1) {
-                throw new IgnoreMeException();
-            }
-            if (firstCount != secondCount) {
-                String queryFormatString = "-- %s;\n-- count: %d";
-                String firstQueryStringWithCount = String.format(queryFormatString, optimizedQueryString, firstCount);
-                String secondQueryStringWithCount = String.format(queryFormatString, unoptimizedQueryString,
-                        secondCount);
-                state.getState().getLocalState()
-                        .log(String.format("%s\n%s", firstQueryStringWithCount, secondQueryStringWithCount));
-                String assertionMessage = String.format("the counts mismatch (%d and %d)!\n%s\n%s", firstCount,
-                        secondCount, firstQueryStringWithCount, secondQueryStringWithCount);
-                throw new AssertionError(assertionMessage);
-            }
-        } finally {
-            csvWriter.append("," + String.valueOf(globalState.getDmbsSpecificOptions().fixedQueryNr) + ","
-                    + String.valueOf(secondCount) + "," + String.valueOf(globalState.getDmbsSpecificOptions().queryDiff)
-                    + "," + String.valueOf(globalState.getDmbsSpecificOptions().queryNr) + "\n");
-            csvWriter.flush();
-            csvWriter.close();
-            if (secondCount > 0) {
-                System.exit(1);
-            }
+        int firstCount = getOptimizedQueryCount(fromTables, columns, randomWhereCondition, joinStatements);
+        if (firstCount == -1 || secondCount == -1) {
+            throw new IgnoreMeException();
         }
+        if (firstCount != secondCount) {
+            String queryFormatString = "-- %s;\n-- count: %d";
+            String firstQueryStringWithCount = String.format(queryFormatString, optimizedQueryString, firstCount);
+            String secondQueryStringWithCount = String.format(queryFormatString, unoptimizedQueryString,
+                    secondCount);
+            state.getState().getLocalState()
+                    .log(String.format("%s\n%s", firstQueryStringWithCount, secondQueryStringWithCount));
+            String assertionMessage = String.format("the counts mismatch (%d and %d)!\n%s\n%s", firstCount,
+                    secondCount, firstQueryStringWithCount, secondQueryStringWithCount);
+            throw new AssertionError(assertionMessage);
+        }
+
     }
 
     public static List<PostgresJoin> getJoinStatements(PostgresGlobalState globalState, List<PostgresColumn> columns,
